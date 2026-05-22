@@ -1,0 +1,245 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.login-page {
+  min-height: 100vh;
+  background-image: linear-gradient(
+      rgba(10, 10, 10, 0.72),
+      rgba(10, 10, 10, 0.72)
+    ),
+    url("https://lavenderstudio.com.vn/wp-content/uploads/2019/07/sap-xep-bo-cuc-chup-anh-trang-suc-dep-2-1024x682.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 60px;
+}
+
+.login-left {
+  flex: 1;
+}
+
+.login-left h1 {
+  color: #d4af37;
+  font-size: 58px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -1px;
+}
+
+.login-left p {
+  font-size: 26px;
+  color: #e5e5e5;
+  line-height: 1.3;
+  max-width: 500px;
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(18, 18, 18, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.login-card h2 {
+  color: #ffffff;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.login-card-copy {
+  color: #d8d8d8;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 16px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  outline: none;
+  background: #111;
+  color: white;
+  transition: 0.2s;
+}
+
+.login-card input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.login-btn {
+  width: 100%;
+  background: #d4af37;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 13px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.login-btn:hover {
+  background: #c59d2f;
+}
+
+.forgot-password {
+  text-align: center;
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 14px;
+  margin: 16px 0;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.create-btn {
+  width: fit-content;
+  margin: 0 auto;
+  background: transparent;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  border-radius: 6px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.create-btn:hover {
+  background: #d4af37;
+  color: #000;
+}
+
+.create-link {
+  display: flex;
+  justify-content: center;
+}
+
+.login-note {
+  margin-top: 28px;
+  font-size: 14px;
+  color: #ccc;
+  text-align: center;
+}
+
+.login-error {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  background: rgba(120, 20, 20, 0.35);
+  color: #ffd6d6;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.login-success {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 210, 135, 0.5);
+  background: rgba(18, 95, 46, 0.35);
+  color: #d9ffe3;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .login-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 30px;
+  }
+
+  .login-left h1 {
+    font-size: 48px;
+  }
+
+  .login-left p {
+    font-size: 22px;
+    max-width: 100%;
+  }
+}
+.brand-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brand-title {
+  font-size: 68px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(
+    90deg,
+    #8a6a16,
+    #d4af37,
+    #fff1a8,
+    #d4af37,
+    #8a6a16
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 4s linear infinite;
+}
+
+.brand-line {
+  width: 120px;
+  height: 2px;
+  margin: 10px 0 14px;
+  background: linear-gradient(to right, #6f5410, #d4af37, #fff1a8);
+  border-radius: 999px;
+}
+
+.brand-tagline {
+  color: #d8d8d8;
+  font-size: 15px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}

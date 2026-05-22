@@ -1,0 +1,395 @@
+.products-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(6, 6, 6, 0.84), rgba(6, 6, 6, 0.9)),
+    url("https://png.pngtree.com/background/20210709/original/pngtree-black-gold-color-matching-simple-gold-picture-image_960610.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #f3f3f3;
+}
+
+.products-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 20px 80px;
+}
+
+.products-toolbar {
+  border-radius: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background:
+    radial-gradient(circle at top left, rgba(244, 200, 75, 0.2), transparent 32%),
+    linear-gradient(145deg, rgba(18, 18, 18, 0.96), rgba(8, 8, 8, 0.94));
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.24);
+  padding: 26px;
+}
+
+.products-toolbar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+
+.products-toolbar-top h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+}
+
+.products-toolbar-top p {
+  margin: 0;
+  color: rgba(233, 233, 233, 0.72);
+}
+
+.product-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 18px;
+  padding: 8px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(8, 8, 8, 0.2));
+}
+
+.product-filter-link {
+  flex: 1 1 0;
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #f1f1f1;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.2s ease;
+}
+
+.product-filter-link:hover,
+.product-filter-link.active {
+  background: #f4c84b;
+  color: #141414;
+}
+
+.products-filter-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.products-filter-row input,
+.products-filter-row select {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3f3f3;
+  padding: 0 12px;
+  font: inherit;
+}
+
+.products-search-button {
+  min-height: 42px;
+  border: 1px solid #f4c84b;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f4c84b, #e8b739);
+  color: #171717;
+  font-weight: 800;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.products-search-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.products-compare-replace {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.products-compare-replace p {
+  margin: 0;
+}
+
+.products-compare-replace div {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.products-compare-replace button {
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.36);
+  background: rgba(244, 200, 75, 0.12);
+  color: #f4c84b;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.products-compare-feedback {
+  margin: 12px 2px 0;
+  color: #f4c84b;
+  font-size: 13px;
+}
+
+.products-error {
+  margin: 12px 0 0;
+  color: #ff9e9e;
+}
+
+.products-state {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(212, 175, 55, 0.34);
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.products-page .product-grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.product-showcase-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 230px;
+  justify-self: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244, 200, 75, 0.32) 0%,
+      rgba(244, 200, 75, 0.16) 18%,
+      rgba(22, 18, 8, 0.92) 42%,
+      rgba(10, 10, 10, 0.98) 100%
+    );
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 180, 0.12);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.products-page .product-showcase-card {
+  max-width: none;
+}
+
+.product-showcase-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(244, 200, 75, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 180, 0.18),
+    0 20px 34px rgba(0, 0, 0, 0.26);
+}
+
+.product-visual {
+  min-height: 150px;
+  padding: 10px;
+  display: flex;
+  align-items: start;
+  justify-content: end;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(40, 31, 10, 0.4), rgba(12, 12, 12, 0.2));
+  text-decoration: none;
+}
+
+.product-visual-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.01);
+}
+
+.product-badge {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.72);
+  color: #f4c84b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.product-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.product-category {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.product-body h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.32;
+}
+
+.product-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0 10px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+}
+
+.product-meta-row strong {
+  color: #f4c84b;
+  font-size: 12px;
+}
+
+.product-stock {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+}
+
+.product-card-actions {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.product-compare-button {
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #f4c84b, #e8b739);
+  color: #171717;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.product-compare-button:hover {
+  background: linear-gradient(135deg, #ffd86b, #f0bc3f);
+}
+
+.product-compare-button.selected {
+  background: linear-gradient(135deg, #9bf1d8, #7ce0c3);
+  color: #0f1c18;
+}
+
+.product-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f4c84b, #e8b739);
+  color: #171717;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.products-pagination {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.products-pagination button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: rgba(244, 200, 75, 0.12);
+  color: #f4c84b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.products-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .products-page {
+    background-attachment: scroll;
+  }
+
+  .products-toolbar-top {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .products-filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .products-page .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .product-filter-bar {
+    flex-direction: column;
+  }
+
+  .product-filter-link {
+    width: 100%;
+    text-align: left;
+  }
+
+  .products-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .products-page .product-grid {
+    grid-template-columns: 1fr;
+  }
+}

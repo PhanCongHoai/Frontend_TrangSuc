@@ -1,0 +1,104 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.register-page {
+  min-height: 100vh;
+  background-image: linear-gradient(
+      rgba(10, 10, 10, 0.7),
+      rgba(10, 10, 10, 0.7)
+    ),
+    url("https://bizweb.dktcdn.net/100/202/714/files/chup-anh-trang-suc-dep-o-ha-noi-01.jpg?v=1509958041965");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(18, 18, 18, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 35px 30px;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.register-container h1 {
+  text-align: center;
+  color: #d4af37;
+  margin-bottom: 25px;
+  font-size: 32px;
+  letter-spacing: 1px;
+}
+
+.register-container input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #111;
+  color: white;
+  outline: none;
+  transition: 0.25s;
+}
+
+.register-container input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+}
+
+.register-btn {
+  margin-top: 10px;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  background: #d4af37;
+  color: #000;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.register-btn:hover {
+  background: #c59d2f;
+}
+
+.back-login-link {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  width: 100%;
+  text-align: right;
+  text-decoration: none;
+  color: #d4af37;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.back-login-link:hover {
+  color: #f0cf68;
+  text-decoration: underline;
+}
+
+.register-container::before {
+  content: "";
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #8a6a16, #d4af37, #fff1a8);
+  margin: 0 auto 20px;
+  border-radius: 999px;
+}
