@@ -61,6 +61,25 @@ function AiChatIcon(props) {
   );
 }
 
+function MenuIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
+
 function isAuthSessionError(data, status) {
   return (
     data?.code === "TOKEN_EXPIRED" ||
@@ -74,6 +93,7 @@ function Header() {
   const navigate = useNavigate();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [cartCount, setCartCount] = useState(() => (getCurrentUser() ? getCartCount() : 0));
   const [compareCount, setCompareCount] = useState(() => getCompareCount());
@@ -197,6 +217,10 @@ function Header() {
     };
   }, [isChatOpen, navigate]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [currentUser]);
+
   const profileLabel = useMemo(() => {
     if (!currentUser) return "";
     return currentUser.fullName || currentUser.username || currentUser.email || "Người dùng";
@@ -225,6 +249,7 @@ function Header() {
   };
 
   const handleOpenChat = () => {
+    setIsMobileMenuOpen(false);
     setIsAiChatOpen(false);
     setIsChatOpen(true);
     setUnreadChatCount(0);
@@ -232,6 +257,7 @@ function Header() {
   };
 
   const handleOpenAiChat = () => {
+    setIsMobileMenuOpen(false);
     setIsChatOpen(false);
     setIsAiChatOpen(true);
   };
@@ -255,21 +281,50 @@ function Header() {
     </button>
   );
 
+  const handleNavigateFromMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <>
       <header className="site-header">
         <div className="header-inner">
+          <div className="header-mobile-topbar">
+            <button
+              type="button"
+              className={`mobile-menu-toggle${isMobileMenuOpen ? " is-open" : ""}`}
+              aria-label={isMobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((value) => !value)}
+            >
+              <MenuIcon className="mobile-menu-toggle-icon" />
+            </button>
+
+            <div className="header-mobile-actions">
+              {cartButton}
+              {currentUser ? <div className="profile-icon header-mobile-profile-icon">{profileInitial}</div> : null}
+            </div>
+          </div>
+
           <Link to="/" className="brand">
             JEWELRYBOOK
           </Link>
 
-          <nav className="header-nav">
-            <NavLink to="/" end>
+          <nav className={`header-nav${isMobileMenuOpen ? " is-open" : ""}`}>
+            <NavLink to="/" end onClick={handleNavigateFromMenu}>
               Trang chủ
             </NavLink>
-            <NavLink to="/products">Sản phẩm</NavLink>
-            <NavLink to="/orders">Đơn hàng</NavLink>
-            <NavLink to="/compare" className="header-compare-link">
+            <NavLink to="/products" onClick={handleNavigateFromMenu}>
+              Sản phẩm
+            </NavLink>
+            <NavLink to="/orders" onClick={handleNavigateFromMenu}>
+              Đơn hàng
+            </NavLink>
+            <NavLink
+              to="/compare"
+              className="header-compare-link"
+              onClick={handleNavigateFromMenu}
+            >
               So sánh
               {compareCount > 0 ? (
                 <span className="header-compare-badge">
@@ -277,7 +332,9 @@ function Header() {
                 </span>
               ) : null}
             </NavLink>
-            <NavLink to="/about">Giới thiệu</NavLink>
+            <NavLink to="/about" onClick={handleNavigateFromMenu}>
+              Giới thiệu
+            </NavLink>
             <button
               type="button"
               className={`header-nav-button${unreadChatCount > 0 ? " has-notification" : ""}`}

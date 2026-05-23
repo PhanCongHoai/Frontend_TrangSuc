@@ -27,6 +27,12 @@
   text-shadow: 0 0 10px rgba(212, 175, 55, 0.28);
 }
 
+.header-mobile-topbar,
+.header-mobile-actions,
+.mobile-menu-toggle {
+  display: none;
+}
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -296,77 +302,162 @@
   }
 
   .header-inner {
-    gap: 12px;
-    padding: 12px 14px;
+    position: relative;
+    gap: 8px;
+    padding: 8px 12px;
     align-items: stretch;
   }
 
   .brand {
+    order: 2;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    text-align: left;
+    font-size: 15px;
+    letter-spacing: 0.4px;
+    line-height: 1.1;
+  }
+
+  .header-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     width: 100%;
-    text-align: center;
-    font-size: 18px;
-    letter-spacing: 0.6px;
+    order: 1;
+  }
+
+  .header-mobile-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .mobile-menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(244, 200, 75, 0.72);
+    border-radius: 10px;
+    background: rgba(244, 200, 75, 0.08);
+    color: #f4c84b;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .mobile-menu-toggle.is-open {
+    background: rgba(244, 200, 75, 0.18);
+  }
+
+  .mobile-menu-toggle-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .btn {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-width: 0;
-    padding: 9px 10px;
+    padding: 7px 10px;
     font-size: 12px;
     text-align: center;
   }
 
   .cart-button {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .cart-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .header-actions,
   .profile-box {
     width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-end;
   }
 
   .profile-box {
-    row-gap: 10px;
+    gap: 8px;
   }
 
   .header-nav {
+    display: none;
+    order: 4;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(244, 200, 75, 0.16);
+    border-radius: 16px;
+    background: rgba(11, 11, 11, 0.96);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .header-nav.is-open {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
   }
 
   .header-nav a,
   .header-nav-button {
     min-width: 0;
-    justify-content: center;
-    padding: 8px 6px;
-    border-radius: 10px;
-    text-align: center;
-    white-space: normal;
+    justify-content: flex-start;
+    padding: 9px 12px;
+    border-radius: 12px;
+    text-align: left;
+    white-space: nowrap;
     overflow-wrap: anywhere;
-    line-height: 1.25;
-    background: rgba(255, 255, 255, 0.03);
+    line-height: 1.2;
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 13px;
   }
 
   .header-compare-link {
-    padding-right: 6px;
+    padding-right: 12px;
   }
 
   .header-compare-badge,
   .header-nav-badge {
-    position: static;
-    margin-left: 4px;
+    position: absolute;
+    top: 7px;
+    right: 10px;
+    margin-left: 0;
+  }
+
+  .header-actions {
+    order: 3;
+    width: auto;
+    margin-left: auto;
+    gap: 8px;
+  }
+
+  .header-actions > .cart-button,
+  .profile-box > .cart-button,
+  .profile-box > .profile-icon:not(.header-mobile-profile-icon) {
+    display: none;
+  }
+
+  .header-actions .btn {
+    flex: 0 1 auto;
+  }
+
+  .profile-box {
+    order: 3;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .profile-meta {
     display: flex;
-    order: 2;
-    width: 100%;
+    order: 1;
+    flex: 1 1 auto;
     min-width: 0;
-    text-align: center;
+    text-align: left;
   }
 
   .profile-meta strong,
@@ -375,15 +466,30 @@
     white-space: normal;
   }
 
-  .profile-box .btn {
-    order: 3;
-    width: 100%;
-    flex: 1 1 100%;
+  .profile-meta strong {
+    font-size: 11px;
   }
 
-  .profile-box .cart-button,
+  .profile-meta span {
+    font-size: 10px;
+  }
+
+  .profile-box .btn {
+    order: 2;
+    width: auto;
+    flex: 0 1 auto;
+    padding-inline: 12px;
+  }
+
   .profile-box .profile-icon {
-    order: 1;
+    display: none;
+  }
+
+  .header-mobile-profile-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
   }
 
   .ai-chat-fab {
