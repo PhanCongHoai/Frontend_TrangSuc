@@ -494,8 +494,8 @@
   .orders-search-panel,
   .orders-empty-state,
   .orders-card {
-    padding: 16px 14px;
-    border-radius: 18px;
+    padding: 16px;
+    border-radius: 20px;
   }
 
   .orders-kicker {
@@ -512,37 +512,212 @@
 
   .orders-card-total {
     min-width: 0;
-    padding: 10px 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(244, 200, 75, 0.12), rgba(255, 255, 255, 0.03));
   }
 
-  .orders-meta-grid,
-  .orders-detail-list,
-  .orders-cost-box,
+  .orders-search-panel {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .orders-search-row {
+    gap: 10px;
+  }
+
+  .orders-search-row input,
+  .orders-search-button,
+  .orders-clear-button,
+  .orders-primary-button {
+    min-height: 46px;
+  }
+
+  .orders-search-row input {
+    padding-inline: 16px;
+    font-size: 15px;
+  }
+
+  .orders-search-button,
+  .orders-clear-button {
+    justify-content: center;
+    width: 100%;
+  }
+
   .orders-summary-grid {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(148px, 76%);
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .orders-summary-grid article {
+    padding: 14px;
+    min-height: 148px;
+    scroll-snap-align: start;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .orders-summary-grid span {
+    margin-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .orders-summary-grid strong {
+    font-size: 18px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .orders-summary-grid p {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .orders-list {
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .orders-card {
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+      rgba(10, 10, 10, 0.96);
+  }
+
+  .orders-card-head {
+    gap: 12px;
+  }
+
+  .orders-card-heading h2 {
+    font-size: 19px;
+    line-height: 1.28;
+  }
+
+  .orders-card-head p {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+
+  .orders-status {
+    margin-bottom: 10px;
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+
+  .orders-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .orders-meta-grid div,
+  .orders-address-box,
+  .orders-items-box,
+  .orders-cost-box div {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .orders-meta-grid span {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .orders-meta-grid strong {
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .orders-summary-row {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: stretch;
+    gap: 8px;
+    overflow-x: auto;
+    margin-top: 14px;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
   }
 
   .orders-summary-row span {
-    width: 100%;
-    border-radius: 14px;
+    width: auto;
+    min-width: max-content;
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    scroll-snap-align: start;
   }
 
-  .orders-address-box,
-  .orders-items-box,
-  .orders-meta-grid div,
-  .orders-cost-box div {
-    padding: 12px;
-    border-radius: 14px;
+  .orders-bottom-grid {
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .orders-side-stack {
+    gap: 12px;
+  }
+
+  .orders-detail-list,
+  .orders-cost-box {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .orders-detail-list p {
+    padding: 10px 11px;
+    border-radius: 12px;
+  }
+
+  .orders-detail-list strong {
+    font-size: 13px;
+  }
+
+  .orders-items-box ul {
+    gap: 12px;
   }
 
   .orders-items-box li {
-    gap: 6px;
-    padding-bottom: 10px;
+    gap: 8px;
+    padding: 0 0 12px;
+  }
+
+  .orders-items-box li span:first-child {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .orders-items-box li span:last-child {
+    text-align: left;
+    font-weight: 700;
+    color: #f4c84b;
+  }
+
+  .orders-cost-box {
+    margin-top: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .orders-cost-box div:last-child {
+    grid-column: 1 / -1;
+    background: linear-gradient(180deg, rgba(244, 200, 75, 0.13), rgba(255, 255, 255, 0.03));
+  }
+
+  .orders-cost-box strong {
+    font-size: 15px;
+    line-height: 1.35;
   }
 
   .orders-items-box li small,
@@ -552,12 +727,5 @@
   .orders-address-box p {
     line-height: 1.55;
     overflow-wrap: anywhere;
-  }
-
-  .orders-search-row input,
-  .orders-search-button,
-  .orders-clear-button,
-  .orders-primary-button {
-    min-height: 46px;
   }
 }
