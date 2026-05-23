@@ -9,6 +9,7 @@ import {
   replaceCompareItemAt,
   subscribeCompareChange,
 } from "../../../utils/compare";
+import { buildAssetUrl } from "../../../utils/api";
 
 const ALL_LABEL = "Tất cả";
 const FILTER_LABEL = "Bộ lọc sản phẩm";
@@ -137,7 +138,7 @@ function FeaturedProductsSection({ collections, products }) {
   const buildComparePayload = (product) => ({
     productId: Number(product.id),
     name: product.name,
-    image: product.image,
+    image: buildAssetUrl(product.image),
     price: product.price,
     material: product.material,
     category: product.category,
@@ -314,7 +315,7 @@ function FeaturedProductsSection({ collections, products }) {
               <div className="product-visual">
                 <img
                   className="product-visual-image"
-                  src={product.image}
+                  src={buildAssetUrl(product.image)}
                   alt={product.name}
                   loading="lazy"
                   decoding="async"

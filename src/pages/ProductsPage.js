@@ -11,7 +11,7 @@ import {
   replaceCompareItemAt,
   subscribeCompareChange,
 } from "../utils/compare";
-import { buildApiUrl } from "../utils/api";
+import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import { subscribeProductVisibilityChange } from "../utils/productSync";
 import "./ProductsPage.css";
 
@@ -137,7 +137,7 @@ function ProductsPage() {
     const nextCompareItem = {
       productId: Number(product.id),
       name: product.name,
-      image: product.image,
+      image: buildAssetUrl(product.image),
       price: product.price,
       material: product.material,
       category: product.category,
@@ -273,7 +273,11 @@ function ProductsPage() {
             {products.map((product) => (
               <article className="products-card product-showcase-card" key={product.id}>
                 <Link to={`/products/${product.id}`} className="products-image-link product-visual">
-                  <img className="product-visual-image" src={product.image} alt={product.name} />
+                  <img
+                    className="product-visual-image"
+                    src={buildAssetUrl(product.image)}
+                    alt={product.name}
+                  />
                   <span className="products-badge product-badge">{product.badge}</span>
                 </Link>
                 <div className="products-card-body product-body">

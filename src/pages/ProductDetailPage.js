@@ -26,7 +26,7 @@ import {
   replaceCompareItemAt,
   subscribeCompareChange,
 } from "../utils/compare";
-import { buildApiUrl } from "../utils/api";
+import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import "./ProductDetailPage.css";
 
 const FALLBACK_IMAGE =
@@ -68,16 +68,25 @@ function ProductDetailPage() {
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   const applyProductData = useCallback((nextProduct, preserveViewState = false) => {
+    const normalizedProduct = {
+      ...nextProduct,
+      images: Array.isArray(nextProduct.images)
+        ? nextProduct.images.map((item) => ({
+            ...item,
+            url: buildAssetUrl(item.url),
+          }))
+        : [],
+    };
     const mainImage =
-      nextProduct.images.find((item) => item.isMain)?.url ||
-      nextProduct.images[0]?.url ||
+      normalizedProduct.images.find((item) => item.isMain)?.url ||
+      normalizedProduct.images[0]?.url ||
       FALLBACK_IMAGE;
 
-    setProduct(nextProduct);
+    setProduct(normalizedProduct);
     setActiveImage((currentImage) => {
       if (
         preserveViewState &&
-        nextProduct.images.some((item) => item.url === currentImage)
+        normalizedProduct.images.some((item) => item.url === currentImage)
       ) {
         return currentImage;
       }
@@ -87,12 +96,12 @@ function ProductDetailPage() {
     setSelectedVariantId((currentVariantId) => {
       if (
         preserveViewState &&
-        nextProduct.variants.some((item) => item.id === currentVariantId)
+        normalizedProduct.variants.some((item) => item.id === currentVariantId)
       ) {
         return currentVariantId;
       }
 
-      return nextProduct.variants[0]?.id || null;
+      return normalizedProduct.variants[0]?.id || null;
     });
   }, []);
 

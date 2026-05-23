@@ -37,6 +37,22 @@ export const API_BASE_URL =
 
 export const API_CONNECTION_LABEL = API_BASE_URL || "same-origin";
 
+function getApiOrigin() {
+  if (!API_BASE_URL) {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return window.location.origin;
+  }
+
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return "";
+  }
+}
+
 export function buildApiUrl(path = "") {
   const normalizedPath = String(path || "").trim();
 
@@ -45,4 +61,40 @@ export function buildApiUrl(path = "") {
   }
 
   return `${API_BASE_URL}${normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`}`;
+}
+
+export function buildAssetUrl(value = "") {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (/^data:/i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  const apiOrigin = getApiOrigin();
+
+  if (normalizedValue.startsWith("/")) {
+    return apiOrigin ? `${apiOrigin}${normalizedValue}` : normalizedValue;
+  }
+
+  if (!/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedValue);
+
+    if (parsedUrl.pathname.startsWith("/uploads/")) {
+      return apiOrigin
+        ? `${apiOrigin}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+        : normalizedValue;
+    }
+
+    return normalizedValue;
+  } catch {
+    return normalizedValue;
+  }
 }

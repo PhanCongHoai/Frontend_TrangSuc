@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { buildAssetUrl } from "../../../utils/api";
 
 const buildBannerImageUrl = (banner) => {
   if (!banner?.image_url) {
     return "";
   }
 
-  return `${banner.image_url}${banner.image_url.includes("?") ? "&" : "?"}v=${
+  const normalizedBannerUrl = buildAssetUrl(banner.image_url);
+
+  return `${normalizedBannerUrl}${normalizedBannerUrl.includes("?") ? "&" : "?"}v=${
     banner.cache_key || banner.id || Date.now()
   }`;
 };

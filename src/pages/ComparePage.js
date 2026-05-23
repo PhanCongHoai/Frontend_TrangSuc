@@ -10,7 +10,7 @@ import {
   removeCompareItem,
   subscribeCompareChange,
 } from "../utils/compare";
-import { buildApiUrl } from "../utils/api";
+import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import { getBlockedProductIds, subscribeProductVisibilityChange } from "../utils/productSync";
 import "./ComparePage.css";
 
@@ -227,7 +227,12 @@ function ComparePage() {
             <div className="compare-selected-grid">
               {compareItems.map((item) => (
                 <article key={item.productId} className="compare-selected-item">
-                  <img src={item.image} alt={item.name} loading="lazy" decoding="async" />
+                  <img
+                    src={buildAssetUrl(item.image)}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div>
                     <strong>{item.name}</strong>
                     <p>{item.price || "Chưa có giá"}</p>
@@ -255,7 +260,7 @@ function ComparePage() {
                   <div className="compare-cell label">Tiêu chí</div>
                   {comparedProducts.map((product) => (
                     <div className="compare-cell" key={product.id}>
-                      <img src={product.image} alt={product.name} />
+                      <img src={buildAssetUrl(product.image)} alt={product.name} />
                       <h3>{product.name}</h3>
                       <button
                         type="button"

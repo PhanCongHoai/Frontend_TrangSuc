@@ -11,6 +11,7 @@ import {
   updateCartQuantity,
 } from "../utils/cart";
 import { formatCurrency } from "../utils/pricing";
+import { buildAssetUrl } from "../utils/api";
 import "./CartPage.css";
 
 function CartPage() {
@@ -90,7 +91,7 @@ function CartPage() {
                 <article className="cart-item-card" key={item.variantId}>
                   <img
                     className="cart-item-image"
-                    src={item.image}
+                    src={buildAssetUrl(item.image)}
                     alt={item.name}
                     loading="lazy"
                     decoding="async"

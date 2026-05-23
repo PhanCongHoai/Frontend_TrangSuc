@@ -76,6 +76,19 @@ function Login() {
     handleEnableHints();
   };
 
+  const handlePrepareMobileInput = (event) => {
+    handleEnableTyping();
+
+    const target = event.currentTarget;
+    target.removeAttribute("readonly");
+
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        target.focus();
+      });
+    }
+  };
+
   const handleLogin = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
@@ -186,6 +199,8 @@ function Login() {
               placeholder="Email"
               value={email}
               readOnly={!allowTyping}
+              onTouchStart={handlePrepareMobileInput}
+              onPointerDown={handlePrepareMobileInput}
               onFocus={handleEnableTyping}
               onKeyDown={handleEnableHints}
               onChange={(event) => setEmail(event.target.value)}
@@ -198,6 +213,8 @@ function Login() {
               placeholder="Mật khẩu"
               value={password}
               readOnly={!allowTyping}
+              onTouchStart={handlePrepareMobileInput}
+              onPointerDown={handlePrepareMobileInput}
               onFocus={handleEnableTyping}
               onKeyDown={handleEnableHints}
               onChange={(event) => setPassword(event.target.value)}

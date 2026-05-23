@@ -444,12 +444,22 @@
   }
 
   .products-pagination {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
     gap: 8px;
   }
 
   .products-pagination button {
-    flex: 1 1 calc(50% - 8px);
+    width: 100%;
     min-width: 0;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+
+  .products-pagination span {
+    min-width: 0;
+    white-space: nowrap;
+    text-align: center;
   }
 }

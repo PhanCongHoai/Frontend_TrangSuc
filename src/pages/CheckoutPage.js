@@ -4,7 +4,7 @@ import Header from "./Header";
 import Footer from "./footer/Footer";
 import { clearCart, getCartItems } from "../utils/cart";
 import { getAuthHeaders, getCurrentUser } from "../utils/auth";
-import { buildApiUrl } from "../utils/api";
+import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import { formatCurrency, normalizePriceTiers, resolveTierPrice } from "../utils/pricing";
 import "./CheckoutPage.css";
 
@@ -74,7 +74,7 @@ const normalizeItem = (item) => {
     productId: Number(item?.productId || 0),
     variantId: Number(item?.variantId || 0),
     name: String(item?.name || "").trim(),
-    image: String(item?.image || "").trim(),
+    image: buildAssetUrl(item?.image),
     size: String(item?.size || "Chuẩn").trim(),
     stockLabel: String(item?.stockLabel || "").trim(),
     quantity,
@@ -1147,7 +1147,11 @@ function CheckoutPage() {
               <div className="checkout-item-list">
                 {checkoutItems.map((item) => (
                   <article className="checkout-item" key={`${item.variantId}-${item.productId}`}>
-                    <img src={item.image} alt={item.name} className="checkout-item-image" />
+                    <img
+                      src={buildAssetUrl(item.image)}
+                      alt={item.name}
+                      className="checkout-item-image"
+                    />
                     <div className="checkout-item-body">
                       <h3>{item.name}</h3>
                       <div className="checkout-item-meta">
