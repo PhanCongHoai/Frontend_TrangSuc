@@ -278,7 +278,6 @@ function ProductsPage() {
                     src={buildAssetUrl(product.image)}
                     alt={product.name}
                   />
-                  <span className="products-badge product-badge">{product.badge}</span>
                 </Link>
                 <div className="products-card-body product-body">
                   <p className="products-category product-category">{product.category}</p>

@@ -320,7 +320,6 @@ function FeaturedProductsSection({ collections, products }) {
                   loading="lazy"
                   decoding="async"
                 />
-                <span className="product-badge">{product.badge}</span>
               </div>
 
               <div className="product-body">

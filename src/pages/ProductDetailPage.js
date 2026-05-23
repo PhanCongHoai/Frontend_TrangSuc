@@ -862,7 +862,6 @@ function ProductDetailPage() {
                   loading="eager"
                   decoding="async"
                 />
-                <span className="product-detail-badge">{product.badge}</span>
               </div>
 
               <div className="product-gallery-thumbs">

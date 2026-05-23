@@ -179,14 +179,43 @@
     gap: 24px;
   }
 
+  .about-split {
+    gap: 14px;
+  }
+
   .about-image-block,
   .about-split-story .about-image-block {
-    min-height: 320px;
+    min-height: 220px;
     border-radius: 16px;
+  }
+
+  .about-image-block img {
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .about-kicker {
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+  }
+
+  .about-text-block h1 {
+    font-size: 25px;
+    line-height: 1.28;
+  }
+
+  .about-text-block h2 {
+    font-size: 21px;
   }
 
   .about-text-block p,
   .about-bullet-list li {
+    font-size: 15px;
     line-height: 1.66;
+    text-align: left;
+  }
+
+  .about-bullet-list {
+    padding-left: 18px;
   }
 }

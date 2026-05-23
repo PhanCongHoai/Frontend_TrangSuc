@@ -4,10 +4,10 @@ import Footer from "./footer/Footer";
 import "./AboutPage.css";
 
 const HERO_IMAGE =
-  "https://png.pngtree.com/thumb_back/fh260/background/20250417/pngtree-blue-flowers-and-gems-jewelry-with-shiny-diamonds-gold-accents-on-image_17206482.jpg";
+  "https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1200&q=80";
 
 const SHOWROOM_IMAGE =
-  "https://cdn.hpdecor.vn/wp-content/uploads/2021/11/thiet-ke-cua-hang-vang-bac-8.jpg";
+  "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1200&q=80";
 
 const steps = [
   {

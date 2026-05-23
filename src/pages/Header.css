@@ -328,6 +328,10 @@
     justify-content: center;
   }
 
+  .profile-box {
+    row-gap: 10px;
+  }
+
   .header-nav {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -359,16 +363,27 @@
 
   .profile-meta {
     display: flex;
-    width: calc(100% - 52px);
+    order: 2;
+    width: 100%;
     min-width: 0;
-    text-align: left;
+    text-align: center;
   }
 
   .profile-meta strong,
   .profile-meta span {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .profile-box .btn {
+    order: 3;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .profile-box .cart-button,
+  .profile-box .profile-icon {
+    order: 1;
   }
 
   .ai-chat-fab {
