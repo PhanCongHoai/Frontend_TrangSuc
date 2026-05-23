@@ -51,6 +51,12 @@
   background: #070707;
 }
 
+.hero-banner-fallback {
+  background:
+    radial-gradient(circle at center, rgba(244, 200, 75, 0.08), transparent 58%),
+    #070707;
+}
+
 .hero-banner-image {
   display: block;
   width: 100%;
@@ -802,8 +808,13 @@
     padding: 0;
   }
 
+  .hero-banner-fallback {
+    display: block;
+  }
+
   .hero-banner-image {
     min-height: 160px;
+    height: clamp(180px, 42vw, 240px);
     max-height: 240px;
     object-fit: cover;
     border-radius: 14px;

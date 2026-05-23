@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildAssetUrl } from "../../../utils/api";
 
+const FALLBACK_BANNER_URL =
+  "https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1600&q=80";
+
 const buildBannerImageUrl = (banner) => {
   if (!banner?.image_url) {
     return "";
@@ -27,7 +30,18 @@ function HeroSection({ heroBanners = [] }) {
   }, [banners.length]);
 
   if (!banners.length) {
-    return null;
+    return (
+      <section className="hero hero-banner hero-banner-image-only hero-banner-fallback">
+        <img
+          src={FALLBACK_BANNER_URL}
+          alt="Banner trang chủ"
+          className="hero-banner-image"
+          loading="eager"
+          decoding="async"
+          draggable="false"
+        />
+      </section>
+    );
   }
 
   const activeBanner = banners[activeIndex];

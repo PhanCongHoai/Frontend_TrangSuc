@@ -401,15 +401,23 @@
   }
 
   .product-filter-bar {
-    flex-direction: column;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(120px, max-content);
     gap: 8px;
     padding: 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
   }
 
   .product-filter-link {
-    width: 100%;
+    width: auto;
+    min-width: 120px;
     text-align: center;
     min-height: 44px;
+    white-space: nowrap;
+    scroll-snap-align: start;
   }
 
   .products-filter-row {
