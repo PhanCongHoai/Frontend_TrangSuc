@@ -1,23 +1,12 @@
 # Frontend Repository
 
-## Purpose
+React frontend for the jewelry project.
 
-This repository contains the React frontend for the jewelry project.
-
-## Local setup
+## Local Setup
 
 1. Copy `.env.example` to `.env`
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Start the local app:
-
-```bash
-npm start
-```
+2. Install dependencies with `npm install`
+3. Start the app with `npm start`
 
 The frontend runs at `http://localhost:3000`.
 
@@ -30,42 +19,15 @@ REACT_APP_API_BASE_URL=http://localhost:5000
 REACT_APP_GOOGLE_CLIENT_ID=
 ```
 
-For Azure production, start from `.env.azure.example` and point `REACT_APP_API_BASE_URL` to your deployed backend URL.
-
-## Azure deployment
-
-This repository is prepared for Azure Static Web Apps with GitHub Actions.
-
-### Required GitHub secrets
-
-- `AZURE_STATIC_WEB_APPS_API_TOKEN`
-- `REACT_APP_API_BASE_URL`
-- `REACT_APP_GOOGLE_CLIENT_ID`
-
-### Workflow
-
-The GitHub Actions workflow is stored in:
-
-- `.github/workflows/deploy-azure-static-web-apps.yml`
-
-It deploys the `main` branch to Azure Static Web Apps and handles preview environments for pull requests.
+Production builds can use `.env.production` or the matching variables configured in Vercel.
 
 ## Available Scripts
 
-### `npm start`
+- `npm start`: run the app in development mode
+- `npm run build`: build the production bundle into `build/`
+- `npm test`: run the React test command when tests are added again
 
-Runs the app in development mode.
-
-### `npm run build`
-
-Builds the production bundle into `build/`.
-
-### `npm test`
-
-Runs the React test runner.
-
-## Git notes
+## Git Notes
 
 - Do not commit `.env`
-- Only commit `.env.example` and `.env.azure.example`
-- Do not commit `build/` or `node_modules/`
+- Keep `build/` and `node_modules/` out of Git

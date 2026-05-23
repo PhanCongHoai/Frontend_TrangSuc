@@ -34,6 +34,7 @@
   text-decoration: none;
   font-size: 14px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .footer-col a:hover {
@@ -61,5 +62,12 @@
 @media (max-width: 560px) {
   .footer-inner {
     grid-template-columns: 1fr;
+    padding: 28px 14px 20px;
+    gap: 18px;
+  }
+
+  .footer-col h3,
+  .footer-col h4 {
+    margin-bottom: 8px;
   }
 }
