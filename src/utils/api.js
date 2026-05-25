@@ -1,6 +1,6 @@
 const LOCAL_API_BASE_URL = "http://localhost:5000";
 const PRODUCTION_TUNNEL_API_BASE_URL =
-  "https://fiber-pocket-chapel-setup.trycloudflare.com";
+  "https://passes-alberta-alot-sub.trycloudflare.com";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 const rawApiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
