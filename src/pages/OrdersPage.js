@@ -13,6 +13,8 @@ import { formatCurrency } from "../utils/pricing";
 import "./OrdersPage.css";
 
 const ORDERS_API = buildApiUrl("/api/orders");
+const FALLBACK_PRODUCT_IMAGE =
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1xp79XGKoIg-gZeZiRg2G7mpp2A6kH-AWow&s";
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -449,7 +451,7 @@ function OrdersPage() {
                           <li key={`${order.id}-${item.variantId || item.productId || item.name}`}>
                             <div className="orders-preview-product">
                               <img
-                                src={buildAssetUrl(item.image || "")}
+                                src={buildAssetUrl(item.image || FALLBACK_PRODUCT_IMAGE)}
                                 alt={item.name}
                                 loading="lazy"
                                 decoding="async"
