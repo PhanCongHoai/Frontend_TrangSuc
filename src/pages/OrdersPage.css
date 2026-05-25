@@ -130,6 +130,7 @@
   color: #f4c84b;
   font-size: clamp(22px, 2.8vw, 30px);
   line-height: 1.1;
+  padding-right: 12px;
 }
 
 .orders-summary-grid p {
