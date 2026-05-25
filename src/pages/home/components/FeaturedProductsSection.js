@@ -207,7 +207,11 @@ function FeaturedProductsSection({ collections, products }) {
 
   return (
     <section className="featured-products" id="featured-products">
-      <nav className="product-filter-bar" aria-label={FILTER_LABEL}>
+      <nav
+        className="product-filter-bar"
+        aria-label={FILTER_LABEL}
+        style={{ "--filter-count": navigationItems.length + 1 }}
+      >
         <button
           type="button"
           className={`product-filter-link ${activeFilter.label === ALL_LABEL ? "active" : ""}`}
