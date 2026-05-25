@@ -867,22 +867,44 @@
 
   .product-filter-bar {
     display: grid;
-    grid-template-columns: repeat(var(--filter-count, 4), minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(var(--mobile-filter-cols, 3), minmax(0, 1fr));
+    gap: 8px;
     overflow: hidden;
-    padding: 6px;
+    padding: 10px;
+    border-radius: 22px;
+    border-color: rgba(212, 175, 55, 0.16);
+    background:
+      linear-gradient(180deg, rgba(244, 200, 75, 0.08), rgba(18, 15, 8, 0.3)),
+      rgba(18, 16, 11, 0.92);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 180, 0.06);
   }
 
   .product-filter-link {
     width: 100%;
     min-width: 0;
     text-align: center;
-    min-height: 48px;
-    padding: 8px 4px;
-    font-size: clamp(10px, 2.8vw, 13px);
-    line-height: 1.15;
+    min-height: 42px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(245, 245, 245, 0.84);
+    font-size: clamp(11px, 2.7vw, 13px);
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .product-filter-link:hover,
+  .product-filter-link.active,
+  .product-filter-group.open > .product-filter-link {
+    background: linear-gradient(135deg, #f4c84b, #e6b63b);
+    color: #17130a;
+    box-shadow:
+      0 10px 20px rgba(244, 200, 75, 0.18),
+      inset 0 1px 0 rgba(255, 250, 225, 0.34);
   }
 
   .product-filter-dropdown {

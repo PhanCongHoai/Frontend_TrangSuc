@@ -210,7 +210,10 @@ function FeaturedProductsSection({ collections, products }) {
       <nav
         className="product-filter-bar"
         aria-label={FILTER_LABEL}
-        style={{ "--filter-count": navigationItems.length + 1 }}
+        style={{
+          "--filter-count": navigationItems.length + 1,
+          "--mobile-filter-cols": Math.ceil((navigationItems.length + 1) / 2),
+        }}
       >
         <button
           type="button"
