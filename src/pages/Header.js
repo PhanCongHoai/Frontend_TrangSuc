@@ -80,6 +80,24 @@ function MenuIcon(props) {
   );
 }
 
+function CloseIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M6 6l12 12" />
+      <path d="M18 6l-12 12" />
+    </svg>
+  );
+}
+
 function isAuthSessionError(data, status) {
   return (
     data?.code === "TOKEN_EXPIRED" ||
@@ -246,6 +264,29 @@ function Header() {
     };
   }, [isProfileCardOpen]);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return undefined;
+    }
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuOpen]);
+
   const profileLabel = useMemo(() => {
     if (!currentUser) return "";
     return currentUser.fullName || currentUser.username || currentUser.email || "Người dùng";
@@ -260,6 +301,7 @@ function Header() {
 
   const handleLogout = () => {
     clearAuthSession();
+    setIsMobileMenuOpen(false);
     setIsProfileCardOpen(false);
     setCurrentUser(null);
     navigate("/", { replace: true });
@@ -435,6 +477,104 @@ function Header() {
           )}
         </div>
       </header>
+
+      <div className={`mobile-drawer-shell${isMobileMenuOpen ? " is-open" : ""}`}>
+        <button
+          type="button"
+          className="mobile-drawer-backdrop"
+          aria-label="Đóng menu điều hướng"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        <aside className="mobile-drawer" aria-hidden={!isMobileMenuOpen}>
+          <div className="mobile-drawer-header">
+            <div className="mobile-drawer-branding">
+              <span className="mobile-drawer-kicker">Jewelrybook</span>
+              <strong>Khám phá trang sức</strong>
+            </div>
+            <button
+              type="button"
+              className="mobile-drawer-close"
+              aria-label="Đóng menu điều hướng"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <CloseIcon className="mobile-drawer-close-icon" />
+            </button>
+          </div>
+
+          <nav className="mobile-drawer-nav">
+            <NavLink to="/" end className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>Trang chủ</span>
+            </NavLink>
+            <NavLink to="/products" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>Sản phẩm</span>
+            </NavLink>
+            <NavLink to="/orders" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>Đơn hàng</span>
+            </NavLink>
+            <NavLink to="/compare" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>So sánh</span>
+              {compareCount > 0 ? (
+                <span className="mobile-drawer-badge">
+                  {compareCount}/{compareMaxItems}
+                </span>
+              ) : null}
+            </NavLink>
+            <NavLink to="/about" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>Giới thiệu</span>
+            </NavLink>
+            <button
+              type="button"
+              className="mobile-drawer-link mobile-drawer-button"
+              onClick={handleOpenChat}
+            >
+              <span>Liên hệ</span>
+              {unreadChatCount > 0 ? (
+                <span className="mobile-drawer-badge">
+                  {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                </span>
+              ) : null}
+            </button>
+          </nav>
+
+          {currentUser ? (
+            <div className="mobile-drawer-account">
+              <div className="mobile-drawer-account-head">
+                <div className="profile-icon mobile-drawer-profile-icon">{profileInitial}</div>
+                <div className="mobile-drawer-account-meta">
+                  <p>Tài khoản hiện tại</p>
+                  <strong>{profileLabel}</strong>
+                  {currentUser.email ? <span>{currentUser.email}</span> : null}
+                </div>
+              </div>
+              <div className="mobile-drawer-account-actions">
+                {canReturnToAdmin ? (
+                  <Link to="/admin/dashboard" className="btn btn-admin" onClick={handleNavigateFromMenu}>
+                    Về admin
+                  </Link>
+                ) : null}
+                <button type="button" className="btn btn-outline" onClick={handleLogout}>
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mobile-drawer-account">
+              <div className="mobile-drawer-account-meta">
+                <p>Chào bạn</p>
+                <strong>Đăng nhập để xem đơn hàng và lưu giỏ hàng</strong>
+              </div>
+              <div className="mobile-drawer-account-actions">
+                <Link to="/login" className="btn btn-outline" onClick={handleNavigateFromMenu}>
+                  Đăng nhập
+                </Link>
+                <Link to="/register" className="btn btn-solid" onClick={handleNavigateFromMenu}>
+                  Đăng ký
+                </Link>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
 
       <ChatWidget
         isOpen={isChatOpen}

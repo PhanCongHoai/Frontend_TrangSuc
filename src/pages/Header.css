@@ -31,6 +31,10 @@
   display: none;
 }
 
+.mobile-drawer-shell {
+  display: none;
+}
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -441,19 +445,6 @@
 
   .header-nav {
     display: none;
-    order: 4;
-    width: 100%;
-    padding: 10px;
-    border: 1px solid rgba(244, 200, 75, 0.16);
-    border-radius: 16px;
-    background: rgba(11, 11, 11, 0.96);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .header-nav.is-open {
-    display: grid;
   }
 
   .header-nav a,
@@ -523,6 +514,207 @@
   .profile-card {
     right: 0;
     min-width: min(220px, calc(100vw - 24px));
+  }
+
+  .mobile-drawer-shell {
+    position: fixed;
+    inset: 0;
+    display: block;
+    z-index: 1080;
+    pointer-events: none;
+  }
+
+  .mobile-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    background: rgba(5, 7, 10, 0.56);
+    opacity: 0;
+    transition: opacity 0.26s ease;
+  }
+
+  .mobile-drawer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(320px, calc(100vw - 28px));
+    height: 100%;
+    padding: 18px 16px 22px;
+    background:
+      linear-gradient(180deg, rgba(28, 25, 18, 0.98), rgba(12, 12, 12, 0.98)),
+      #111111;
+    border-right: 1px solid rgba(244, 200, 75, 0.2);
+    box-shadow: 22px 0 42px rgba(0, 0, 0, 0.34);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transform: translateX(-104%);
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-drawer-shell.is-open {
+    pointer-events: auto;
+  }
+
+  .mobile-drawer-shell.is-open .mobile-drawer-backdrop {
+    opacity: 1;
+  }
+
+  .mobile-drawer-shell.is-open .mobile-drawer {
+    transform: translateX(0);
+  }
+
+  .mobile-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-drawer-branding {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mobile-drawer-kicker {
+    color: rgba(244, 200, 75, 0.78);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .mobile-drawer-branding strong {
+    color: #f7f2df;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .mobile-drawer-close {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(244, 200, 75, 0.24);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #f4c84b;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .mobile-drawer-close-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mobile-drawer-nav {
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+  }
+
+  .mobile-drawer-link,
+  .mobile-drawer-button {
+    text-decoration: none;
+    color: rgba(243, 243, 243, 0.88);
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 4px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-drawer-link.active {
+    color: #f4c84b;
+  }
+
+  .mobile-drawer-badge {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(244, 200, 75, 0.16);
+    border: 1px solid rgba(244, 200, 75, 0.24);
+    color: #f4c84b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .mobile-drawer-account {
+    margin-top: auto;
+    padding: 14px;
+    border: 1px solid rgba(244, 200, 75, 0.16);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .mobile-drawer-account-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-drawer-profile-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+  }
+
+  .mobile-drawer-account-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .mobile-drawer-account-meta p {
+    margin: 0;
+    color: rgba(244, 200, 75, 0.75);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .mobile-drawer-account-meta strong {
+    color: #f7f2df;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .mobile-drawer-account-meta span {
+    color: rgba(243, 243, 243, 0.74);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-drawer-account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mobile-drawer-account-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
   }
 
   .ai-chat-fab {
