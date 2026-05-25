@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import ChatWidget from "../components/ChatWidget";
 import AiAdvisorWidget from "../components/AiAdvisorWidget";
@@ -91,9 +91,11 @@ function isAuthSessionError(data, status) {
 
 function Header() {
   const navigate = useNavigate();
+  const profileAccountRef = useRef(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileCardOpen, setIsProfileCardOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [cartCount, setCartCount] = useState(() => (getCurrentUser() ? getCartCount() : 0));
   const [compareCount, setCompareCount] = useState(() => getCompareCount());
@@ -219,7 +221,30 @@ function Header() {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsProfileCardOpen(false);
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!isProfileCardOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (profileAccountRef.current?.contains(event.target)) {
+        return;
+      }
+
+      setIsProfileCardOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isProfileCardOpen]);
 
   const profileLabel = useMemo(() => {
     if (!currentUser) return "";
@@ -235,11 +260,14 @@ function Header() {
 
   const handleLogout = () => {
     clearAuthSession();
+    setIsProfileCardOpen(false);
     setCurrentUser(null);
     navigate("/", { replace: true });
   };
 
   const handleOpenCart = () => {
+    setIsProfileCardOpen(false);
+
     if (!currentUser) {
       navigate("/login", { state: { from: "/cart" } });
       return;
@@ -250,6 +278,7 @@ function Header() {
 
   const handleOpenChat = () => {
     setIsMobileMenuOpen(false);
+    setIsProfileCardOpen(false);
     setIsAiChatOpen(false);
     setIsChatOpen(true);
     setUnreadChatCount(0);
@@ -258,6 +287,7 @@ function Header() {
 
   const handleOpenAiChat = () => {
     setIsMobileMenuOpen(false);
+    setIsProfileCardOpen(false);
     setIsChatOpen(false);
     setIsAiChatOpen(true);
   };
@@ -283,28 +313,25 @@ function Header() {
 
   const handleNavigateFromMenu = () => {
     setIsMobileMenuOpen(false);
+    setIsProfileCardOpen(false);
   };
 
   return (
     <>
       <header className="site-header">
         <div className="header-inner">
-          <div className="header-mobile-topbar">
-            <button
-              type="button"
-              className={`mobile-menu-toggle${isMobileMenuOpen ? " is-open" : ""}`}
-              aria-label={isMobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
-              aria-expanded={isMobileMenuOpen}
-              onClick={() => setIsMobileMenuOpen((value) => !value)}
-            >
-              <MenuIcon className="mobile-menu-toggle-icon" />
-            </button>
-
-            <div className="header-mobile-actions">
-              {cartButton}
-              {currentUser ? <div className="profile-icon header-mobile-profile-icon">{profileInitial}</div> : null}
-            </div>
-          </div>
+          <button
+            type="button"
+            className={`mobile-menu-toggle${isMobileMenuOpen ? " is-open" : ""}`}
+            aria-label={isMobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => {
+              setIsProfileCardOpen(false);
+              setIsMobileMenuOpen((value) => !value);
+            }}
+          >
+            <MenuIcon className="mobile-menu-toggle-icon" />
+          </button>
 
           <Link to="/" className="brand">
             JEWELRYBOOK
@@ -362,10 +389,39 @@ function Header() {
           ) : (
             <div className="profile-box">
               {cartButton}
-              <div className="profile-icon">{profileInitial}</div>
-              <div className="profile-meta">
-                <strong>{profileLabel}</strong>
-                <span>{currentUser.email}</span>
+              <div
+                ref={profileAccountRef}
+                className={`profile-account${isProfileCardOpen ? " is-open" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="profile-trigger"
+                  aria-label={`Xem tài khoản ${profileLabel}`}
+                  aria-expanded={isProfileCardOpen}
+                  onClick={() => setIsProfileCardOpen((value) => !value)}
+                >
+                  <div className="profile-icon">{profileInitial}</div>
+                </button>
+                <div className="profile-meta">
+                  <strong>{profileLabel}</strong>
+                  <span>{currentUser.email}</span>
+                </div>
+                {isProfileCardOpen ? (
+                  <div className="profile-card">
+                    <p className="profile-card-label">Tài khoản đang đăng nhập</p>
+                    <strong>{profileLabel}</strong>
+                    {currentUser.email ? <span>{currentUser.email}</span> : null}
+                    {canReturnToAdmin ? (
+                      <Link
+                        to="/admin/dashboard"
+                        className="profile-card-link"
+                        onClick={handleNavigateFromMenu}
+                      >
+                        Vào trang admin
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               {canReturnToAdmin ? (
                 <Link to="/admin/dashboard" className="btn btn-admin">
