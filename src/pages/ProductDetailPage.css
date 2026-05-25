@@ -694,7 +694,19 @@
   }
 
   .product-gallery-thumbs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, 56px);
+    justify-content: start;
+    gap: 8px;
+  }
+
+  .product-gallery-thumb {
+    width: 56px;
+    min-height: 56px;
+    border-radius: 12px;
+  }
+
+  .product-gallery-thumb img {
+    min-height: 56px;
   }
 
   .product-detail-panel {

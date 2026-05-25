@@ -228,10 +228,8 @@ function Login() {
               Quên mật khẩu?
             </Link>
 
-            <Link to="/register" className="create-link">
-              <button type="button" className="create-btn">
-                Tạo tài khoản mới
-              </button>
+            <Link to="/register" className="create-link create-btn">
+              Tạo tài khoản mới
             </Link>
           </form>
         </div>
