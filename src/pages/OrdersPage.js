@@ -16,6 +16,108 @@ const ORDERS_API = buildApiUrl("/api/orders");
 const FALLBACK_PRODUCT_IMAGE =
   "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1xp79XGKoIg-gZeZiRg2G7mpp2A6kH-AWow&s";
 
+function normalizePaymentLabel(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+
+  if (!normalized) {
+    return "Chưa xác định";
+  }
+
+  if (["COD", "CASH_ON_DELIVERY"].includes(normalized)) {
+    return "Thanh toán khi nhận hàng";
+  }
+
+  if (["PREPAID", "BANK_TRANSFER", "TRANSFER"].includes(normalized)) {
+    return "Thanh toán trước";
+  }
+
+  return value;
+}
+
+function normalizePaymentStatus(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+
+  if (!normalized) {
+    return "Chưa xác định";
+  }
+
+  if (["PAID", "SUCCESS", "COMPLETED"].includes(normalized)) {
+    return "Đã thanh toán";
+  }
+
+  if (["UNPAID", "PENDING", "WAITING_PAYMENT"].includes(normalized)) {
+    return "Chưa thanh toán";
+  }
+
+  if (["PROCESSING", "VERIFYING"].includes(normalized)) {
+    return "Đang xử lý thanh toán";
+  }
+
+  if (["FAILED", "ERROR"].includes(normalized)) {
+    return "Thanh toán thất bại";
+  }
+
+  if (["CANCELLED", "CANCELED"].includes(normalized)) {
+    return "Đã hủy thanh toán";
+  }
+
+  if (["REFUNDED"].includes(normalized)) {
+    return "Đã hoàn tiền";
+  }
+
+  if (["PARTIALLY_REFUNDED"].includes(normalized)) {
+    return "Hoàn tiền một phần";
+  }
+
+  return status;
+}
+
+function normalizeShippingStatus(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+
+  if (!normalized) {
+    return "Chưa tạo vận đơn";
+  }
+
+  if (["READY_TO_PICK", "NEW", "PICKUP_REQUESTED"].includes(normalized)) {
+    return "Chờ lấy hàng";
+  }
+
+  if (["PICKING", "PICKED", "MONEY_COLLECT_PICKING"].includes(normalized)) {
+    return "Đang lấy hàng";
+  }
+
+  if (["STORING", "SORTING", "TRANSPORTING", "IN_TRANSIT"].includes(normalized)) {
+    return "Đang trung chuyển";
+  }
+
+  if (["DELIVERING", "SHIPPING"].includes(normalized)) {
+    return "Đang giao hàng";
+  }
+
+  if (["DELIVERED", "DELIVERY_SUCCESS"].includes(normalized)) {
+    return "Giao thành công";
+  }
+
+  if (["DELIVERY_FAIL", "FAILED", "EXCEPTION"].includes(normalized)) {
+    return "Giao hàng thất bại";
+  }
+
+  if (["RETURN", "RETURNING"].includes(normalized)) {
+    return "Đang hoàn hàng";
+  }
+
+  if (["RETURNED"].includes(normalized)) {
+    return "Đã hoàn hàng";
+  }
+
+  if (["CANCELLED", "CANCELED"].includes(normalized)) {
+    return "Đã hủy vận đơn";
+  }
+
+  return status;
+}
+
 function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -235,6 +337,11 @@ function OrdersPage() {
 
     return orders.filter((order) => {
       const normalizedStatus = normalizeOrderStatus(order.status);
+      const normalizedPaymentLabel = normalizePaymentLabel(
+        order.paymentLabel || order.paymentMethod
+      );
+      const normalizedPaymentStatus = normalizePaymentStatus(order.paymentStatus);
+      const normalizedShippingStatus = normalizeShippingStatus(order.shippingStatus);
       const fields = [
         order.orderCode,
         order.title,
@@ -247,9 +354,9 @@ function OrdersPage() {
         order.provinceName,
         order.address,
         order.note,
-        order.paymentLabel,
-        order.paymentStatus,
-        order.shippingStatus,
+        normalizedPaymentLabel,
+        normalizedPaymentStatus,
+        normalizedShippingStatus,
         order.status,
         normalizedStatus.label,
         String(order.parcelWeight || ""),
@@ -401,6 +508,11 @@ function OrdersPage() {
           <section className="orders-list">
             {filteredOrders.map((order, index) => {
               const resolvedStatus = normalizeOrderStatus(order.status);
+              const resolvedPaymentLabel = normalizePaymentLabel(
+                order.paymentLabel || order.paymentMethod
+              );
+              const resolvedPaymentStatus = normalizePaymentStatus(order.paymentStatus);
+              const resolvedShippingStatus = normalizeShippingStatus(order.shippingStatus);
               const items = Array.isArray(order.items) ? order.items : [];
               const previewItems = items.slice(0, 2);
               const remainingItemsCount = Math.max(0, items.length - previewItems.length);
@@ -432,7 +544,7 @@ function OrdersPage() {
                       </div>
                       <div className="orders-preview-meta">
                         <span>Thanh toán</span>
-                        <strong>{order.paymentLabel || "Chưa xác định"}</strong>
+                        <strong>{resolvedPaymentLabel}</strong>
                       </div>
                       <div className="orders-preview-meta">
                         <span>Trạng thái đơn hàng</span>
@@ -500,7 +612,7 @@ function OrdersPage() {
                         </div>
                         <div>
                           <span>Phương thức thanh toán</span>
-                          <strong>{order.paymentLabel || "Chưa xác định"}</strong>
+                          <strong>{resolvedPaymentLabel}</strong>
                         </div>
                         <div>
                           <span>Người nhận</span>
@@ -516,11 +628,11 @@ function OrdersPage() {
                         </div>
                         <div>
                           <span>Trạng thái thanh toán</span>
-                          <strong>{order.paymentStatus || "Chưa xác định"}</strong>
+                          <strong>{resolvedPaymentStatus}</strong>
                         </div>
                         <div>
                           <span>Trạng thái vận chuyển</span>
-                          <strong>{order.shippingStatus || "Chưa tạo vận đơn"}</strong>
+                          <strong>{resolvedShippingStatus}</strong>
                         </div>
                         <div>
                           <span>Ngày đặt</span>
