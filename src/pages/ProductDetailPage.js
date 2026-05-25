@@ -942,63 +942,6 @@ function ProductDetailPage() {
                 ))}
               </div>
             </div>
-
-            <section className="product-review-section">
-              <article className="product-info-card product-review-card">
-                <div className="product-section-heading">
-                  <p>{"Đánh giá"}</p>
-                  <h2>{"Cảm nhận từ khách hàng"}</h2>
-                </div>
-
-                <form className="product-review-form" onSubmit={handleReviewSubmit}>
-                  <div className="product-review-form-top">
-                    <div>
-                      <span className="product-review-form-label">{"Số sao đánh giá"}</span>
-                      <div className="product-review-stars" role="radiogroup" aria-label={"Số sao đánh giá"}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            className={`product-review-star ${
-                              reviewRating >= star ? "active" : ""
-                            }`}
-                            onClick={() => setReviewRating(star)}
-                            aria-label={`${star} sao`}
-                          >
-                            {"★"}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <textarea
-                    ref={reviewTextareaRef}
-                    className="product-review-textarea"
-                    placeholder={"Chia sẻ trải nghiệm của bạn về sản phẩm này..."}
-                    value={reviewComment}
-                    onChange={(event) => {
-                      setReviewComment(event.target.value);
-                      autoResizeTextarea(event.target);
-                    }}
-                    onKeyDown={handleTextareaSubmitShortcut}
-                    rows={1}
-                  />
-
-                  {reviewError ? <p className="product-review-feedback error">{reviewError}</p> : null}
-                </form>
-
-                {product.reviews.items.length ? (
-                  <div className="product-review-list">
-                    {renderCommentItems(product.reviews.items)}
-                  </div>
-                ) : (
-                  <p className="product-empty-copy">
-                    {"Chưa có đánh giá được duyệt cho sản phẩm này."}
-                  </p>
-                )}
-              </article>
-            </section>
           </div>
 
           <div className="product-detail-panel">
@@ -1159,6 +1102,61 @@ function ProductDetailPage() {
             ) : null}
             {compareFeedback ? <p className="product-cart-feedback">{compareFeedback}</p> : null}
           </div>
+        </section>
+
+        <section className="product-review-section">
+          <article className="product-info-card product-review-card">
+            <div className="product-section-heading">
+              <p>{"Đánh giá"}</p>
+              <h2>{"Cảm nhận từ khách hàng"}</h2>
+            </div>
+
+            <form className="product-review-form" onSubmit={handleReviewSubmit}>
+              <div className="product-review-form-top">
+                <div>
+                  <span className="product-review-form-label">{"Số sao đánh giá"}</span>
+                  <div className="product-review-stars" role="radiogroup" aria-label={"Số sao đánh giá"}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`product-review-star ${reviewRating >= star ? "active" : ""}`}
+                        onClick={() => setReviewRating(star)}
+                        aria-label={`${star} sao`}
+                      >
+                        {"★"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <textarea
+                ref={reviewTextareaRef}
+                className="product-review-textarea"
+                placeholder={"Chia sẻ trải nghiệm của bạn về sản phẩm này..."}
+                value={reviewComment}
+                onChange={(event) => {
+                  setReviewComment(event.target.value);
+                  autoResizeTextarea(event.target);
+                }}
+                onKeyDown={handleTextareaSubmitShortcut}
+                rows={1}
+              />
+
+              {reviewError ? <p className="product-review-feedback error">{reviewError}</p> : null}
+            </form>
+
+            {product.reviews.items.length ? (
+              <div className="product-review-list">
+                {renderCommentItems(product.reviews.items)}
+              </div>
+            ) : (
+              <p className="product-empty-copy">
+                {"Chưa có đánh giá được duyệt cho sản phẩm này."}
+              </p>
+            )}
+          </article>
         </section>
       </main>
 
