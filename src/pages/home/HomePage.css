@@ -868,6 +868,7 @@
   .product-filter-bar {
     display: grid;
     grid-template-columns: repeat(var(--mobile-filter-cols, 3), minmax(0, 1fr));
+    align-items: stretch;
     gap: 8px;
     overflow: hidden;
     padding: 10px;
@@ -880,6 +881,9 @@
   }
 
   .product-filter-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     min-width: 0;
     text-align: center;
@@ -957,5 +961,11 @@
 
   .section-heading h2 {
     font-size: clamp(24px, 8vw, 30px);
+  }
+}
+
+@media (max-width: 420px) {
+  .product-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
