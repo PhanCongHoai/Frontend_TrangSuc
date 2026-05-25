@@ -32,6 +32,63 @@ import "./ProductDetailPage.css";
 const FALLBACK_IMAGE =
   "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1xp79XGKoIg-gZeZiRg2G7mpp2A6kH-AWow&s";
 
+function BuyNowIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M8 7.5A4 4 0 0 1 12 4a4 4 0 0 1 4 3.5" />
+      <path d="M6.5 8.5h11l-1 10a1 1 0 0 1-1 .9H8.5a1 1 0 0 1-1-.9l-1-10Z" />
+    </svg>
+  );
+}
+
+function CartActionIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="9" cy="19" r="1.5" />
+      <circle cx="17" cy="19" r="1.5" />
+      <path d="M3 5h2l2.2 8.5a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 8H7.2" />
+    </svg>
+  );
+}
+
+function CompareActionIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 5v14" />
+      <path d="M7 8l-3 4h6l-3-4Z" />
+      <path d="M17 16l-3-4h6l-3 4Z" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}
+
 function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -1057,17 +1114,23 @@ function ProductDetailPage() {
             <div className="product-purchase-actions">
               <button
                 type="button"
-                className="product-buy-button"
-                onClick={() => handleAddToCart(false)}
-              >
-                {"Thêm vào giỏ hàng"}
-              </button>
-              <button
-                type="button"
                 className="product-buy-now-button"
                 onClick={handleBuyNow}
               >
-                Mua ngay
+                <span className="product-action-content">
+                  <BuyNowIcon className="product-action-icon" />
+                  <span>Mua ngay</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="product-buy-button"
+                onClick={() => handleAddToCart(false)}
+              >
+                <span className="product-action-content">
+                  <CartActionIcon className="product-action-icon" />
+                  <span>Thêm vào giỏ hàng</span>
+                </span>
               </button>
               <button
                 type="button"
@@ -1078,11 +1141,16 @@ function ProductDetailPage() {
                 }`}
                 onClick={handleToggleCompare}
               >
-                {compareItems.some((item) => Number(item.productId) === Number(product.id))
-                  ? "Đã thêm để so sánh"
-                  : compareItems.length >= compareMaxItems
-                  ? "Thay vào so sánh"
-                  : "So sánh sản phẩm này"}
+                <span className="product-action-content">
+                  <CompareActionIcon className="product-action-icon" />
+                  <span>
+                    {compareItems.some((item) => Number(item.productId) === Number(product.id))
+                      ? "Đã thêm để so sánh"
+                      : compareItems.length >= compareMaxItems
+                      ? "Thay vào so sánh"
+                      : "So sánh sản phẩm này"}
+                  </span>
+                </span>
               </button>
             </div>
             {cartError ? <p className="product-cart-feedback error">{cartError}</p> : null}
