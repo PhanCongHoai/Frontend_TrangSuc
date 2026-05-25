@@ -410,7 +410,7 @@
 }
 
 .product-review-section {
-  margin-top: 28px;
+  margin-top: 0;
 }
 
 .product-info-card {
@@ -727,6 +727,28 @@
 @media (max-width: 700px) {
   .product-detail-shell {
     padding: 24px 16px 60px;
+  }
+
+  .product-detail-hero {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-detail-media-column {
+    display: contents;
+  }
+
+  .product-gallery-panel {
+    order: 1;
+  }
+
+  .product-detail-panel {
+    order: 2;
+  }
+
+  .product-review-section {
+    order: 3;
+    margin-top: 24px;
   }
 
   .product-gallery-main {
