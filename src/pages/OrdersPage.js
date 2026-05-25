@@ -8,7 +8,7 @@ import {
   getAuthHeaders,
   getCurrentUser,
 } from "../utils/auth";
-import { buildApiUrl } from "../utils/api";
+import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import { formatCurrency } from "../utils/pricing";
 import "./OrdersPage.css";
 
@@ -433,6 +433,10 @@ function OrdersPage() {
                         <strong>{order.paymentLabel || "Chưa xác định"}</strong>
                       </div>
                       <div className="orders-preview-meta">
+                        <span>Trạng thái đơn hàng</span>
+                        <strong>{resolvedStatus.label}</strong>
+                      </div>
+                      <div className="orders-preview-meta">
                         <span>Số sản phẩm</span>
                         <strong>{items.length}</strong>
                       </div>
@@ -443,10 +447,19 @@ function OrdersPage() {
                       <ul>
                         {previewItems.map((item) => (
                           <li key={`${order.id}-${item.variantId || item.productId || item.name}`}>
-                            <span>{item.name}</span>
-                            <small>
-                              {`x${item.quantity}`} · {formatCurrency(item.unitPrice || 0)}
-                            </small>
+                            <div className="orders-preview-product">
+                              <img
+                                src={buildAssetUrl(item.image || "")}
+                                alt={item.name}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              <span>{item.name}</span>
+                            </div>
+                            <div className="orders-preview-product-meta">
+                              <small>{`x${item.quantity}`}</small>
+                              <small>{formatCurrency(item.unitPrice || 0)}</small>
+                            </div>
                           </li>
                         ))}
                         {remainingItemsCount > 0 ? (
