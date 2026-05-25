@@ -224,12 +224,17 @@
     justify-content: flex-start;
   }
 
-  .compare-row {
-    grid-template-columns: 1fr;
+  .compare-table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .compare-cell.label {
-    background: rgba(244, 200, 75, 0.15);
+  .compare-table {
+    min-width: 860px;
+  }
+
+  .compare-row {
+    grid-template-columns: minmax(180px, 0.55fr) repeat(2, minmax(0, 1fr));
   }
 
   .compare-selected-item {
