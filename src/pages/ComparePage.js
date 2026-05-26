@@ -15,6 +15,8 @@ import { getBlockedProductIds, subscribeProductVisibilityChange } from "../utils
 import "./ComparePage.css";
 
 const API_BASE_URL = buildApiUrl("/api/products");
+const COMPARE_UNAVAILABLE_MESSAGE =
+  "Một hoặc nhiều sản phẩm đã ngừng hiển thị. Hãy bỏ sản phẩm đó và chọn lại.";
 
 const parseJsonResponse = async (response) => {
   const contentType = response.headers.get("content-type") || "";
@@ -36,10 +38,25 @@ const parseJsonResponse = async (response) => {
   return response.json();
 };
 
+const normalizeCompareErrorMessage = (message) => {
+  const normalizedMessage = String(message || "").trim();
+
+  if (!normalizedMessage) {
+    return "Không thể lấy dữ liệu so sánh.";
+  }
+
+  if (/unavailable for comparison/i.test(normalizedMessage)) {
+    return COMPARE_UNAVAILABLE_MESSAGE;
+  }
+
+  return normalizedMessage;
+};
+
 function ComparePage() {
   const [compareItems, setCompareItems] = useState(() => getCompareItems());
   const [compareConfig, setCompareConfig] = useState(() => getCompareConfig());
   const [comparedProducts, setComparedProducts] = useState([]);
+  const [unavailableProductIds, setUnavailableProductIds] = useState([]);
   const [reviewsByProduct, setReviewsByProduct] = useState({});
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -83,6 +100,7 @@ function ComparePage() {
     const loadComparedProducts = async () => {
       if (compareIds.length !== compareConfig.requiredItems) {
         setComparedProducts([]);
+        setUnavailableProductIds([]);
         setReviewsByProduct({});
         setError("");
         return;
@@ -91,6 +109,8 @@ function ComparePage() {
       try {
         setLoading(true);
         setError("");
+        setUnavailableProductIds([]);
+
         const response = await fetch(`${API_BASE_URL}/compare/preview`, {
           method: "POST",
           headers: {
@@ -101,15 +121,26 @@ function ComparePage() {
         const data = await parseJsonResponse(response);
 
         if (!response.ok || !data?.success || !Array.isArray(data.comparedProducts)) {
-          throw new Error(data?.message || "Không thể lấy dữ liệu so sánh.");
+          setComparedProducts(Array.isArray(data?.comparedProducts) ? data.comparedProducts : []);
+          setUnavailableProductIds(
+            Array.isArray(data?.unavailableProductIds)
+              ? data.unavailableProductIds
+                  .map((productId) => Number(productId))
+                  .filter((productId) => productId > 0)
+              : []
+          );
+          throw new Error(normalizeCompareErrorMessage(data?.message));
         }
 
         setComparedProducts(data.comparedProducts);
+        setUnavailableProductIds([]);
       } catch (fetchError) {
         if (fetchError instanceof TypeError) {
+          setComparedProducts([]);
+          setUnavailableProductIds([]);
           setError("Không thể kết nối tới backend. Hãy kiểm tra server backend.");
         } else {
-          setError(fetchError.message || "Không thể lấy dữ liệu so sánh.");
+          setError(normalizeCompareErrorMessage(fetchError.message));
         }
       } finally {
         setLoading(false);
@@ -181,6 +212,7 @@ function ComparePage() {
   }, [compareConfig.requiredItems, compareIds]);
 
   const canCompare = compareIds.length === compareConfig.requiredItems;
+  const shouldShowSelectedItems = !canCompare || Boolean(error);
 
   const renderReviewThread = (items = [], isReplyLevel = false) =>
     items.map((item) => (
@@ -197,6 +229,46 @@ function ComparePage() {
         ) : null}
       </article>
     ));
+
+  const renderSelectedItems = (title) => (
+    <section className="compare-incomplete-card">
+      <h2>{title}</h2>
+      {error ? <p className="compare-selected-help">{COMPARE_UNAVAILABLE_MESSAGE}</p> : null}
+      <div className="compare-selected-grid">
+        {compareItems.map((item) => {
+          const isUnavailable = unavailableProductIds.includes(Number(item.productId));
+
+          return (
+            <article
+              key={item.productId}
+              className={`compare-selected-item${isUnavailable ? " unavailable" : ""}`}
+            >
+              <img
+                src={buildAssetUrl(item.image)}
+                alt={item.name}
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="compare-selected-item-copy">
+                <strong>{item.name}</strong>
+                <p>{item.price || "Chưa có giá"}</p>
+                {isUnavailable ? (
+                  <span className="compare-selected-status">Không còn khả dụng để so sánh</span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="compare-remove-button"
+                onClick={() => removeCompareItem(item.productId)}
+              >
+                Bỏ
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 
   return (
     <div className="compare-page">
@@ -221,34 +293,13 @@ function ComparePage() {
           </div>
         </section>
 
-        {!canCompare ? (
-          <section className="compare-incomplete-card">
-            <h2>Chọn đủ 2 sản phẩm để bắt đầu so sánh</h2>
-            <div className="compare-selected-grid">
-              {compareItems.map((item) => (
-                <article key={item.productId} className="compare-selected-item">
-                  <img
-                    src={buildAssetUrl(item.image)}
-                    alt={item.name}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div>
-                    <strong>{item.name}</strong>
-                    <p>{item.price || "Chưa có giá"}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="compare-remove-button"
-                    onClick={() => removeCompareItem(item.productId)}
-                  >
-                    Bỏ
-                  </button>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {shouldShowSelectedItems
+          ? renderSelectedItems(
+              canCompare
+                ? "Chọn lại sản phẩm để tiếp tục so sánh"
+                : "Chọn đủ 2 sản phẩm để bắt đầu so sánh"
+            )
+          : null}
 
         {canCompare ? (
           <section className="compare-table-card">
