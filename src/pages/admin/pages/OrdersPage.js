@@ -5,6 +5,7 @@ import { buildApiUrl } from "../../../utils/api";
 
 const ORDERS_API = buildApiUrl("/api/orders/admin/list");
 const STATUS_API = buildApiUrl("/api/orders/admin");
+const ORDERS_PAGE_SIZE = 10;
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -14,6 +15,7 @@ function OrdersPage() {
   const [feedback, setFeedback] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
   const loadOrders = useCallback(async () => {
@@ -88,6 +90,24 @@ function OrdersPage() {
     });
   }, [orders, searchKeyword, statusFilter]);
 
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PAGE_SIZE)),
+    [filteredOrders.length]
+  );
+
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * ORDERS_PAGE_SIZE;
+    return filteredOrders.slice(startIndex, startIndex + ORDERS_PAGE_SIZE);
+  }, [currentPage, filteredOrders]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
+
   const handleUpdateOrderStatus = async (orderId, nextStatus) => {
     try {
       setUpdatingOrderId(orderId);
@@ -158,14 +178,18 @@ function OrdersPage() {
 
       {status === "success" ? (
         <OrdersSection
-          orders={filteredOrders}
+          orders={paginatedOrders}
           summary={summary}
           totalOrders={orders.length}
+          filteredOrdersCount={filteredOrders.length}
           searchKeyword={searchKeyword}
           statusFilter={statusFilter}
+          currentPage={currentPage}
+          totalPages={totalPages}
           updatingOrderId={updatingOrderId}
           onSearchChange={setSearchKeyword}
           onStatusFilterChange={setStatusFilter}
+          onPageChange={setCurrentPage}
           onRefresh={loadOrders}
           onUpdateOrderStatus={handleUpdateOrderStatus}
         />

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Footer from "./footer/Footer";
 import Header from "./Header";
+import { formatWeightInGrams } from "../utils/weight";
 import {
   getBlockedProductIds,
   isProductBlocked,
@@ -1027,7 +1028,7 @@ function ProductDetailPage() {
               </div>
               <div>
                 <span>{"Trọng lượng nền"}</span>
-                <strong>{product.material.baseWeight} chi</strong>
+                <strong>{formatWeightInGrams(product.material.baseWeight)}</strong>
               </div>
               <div>
                 <span>{"Tồn kho"}</span>

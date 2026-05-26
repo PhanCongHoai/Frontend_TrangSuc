@@ -12,6 +12,7 @@ import {
 } from "../utils/compare";
 import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import { getBlockedProductIds, subscribeProductVisibilityChange } from "../utils/productSync";
+import { formatWeightInGrams } from "../utils/weight";
 import "./ComparePage.css";
 
 const API_BASE_URL = buildApiUrl("/api/products");
@@ -355,7 +356,7 @@ function ComparePage() {
                   <div className="compare-cell label">Trọng lượng nền</div>
                   {comparedProducts.map((product) => (
                     <div className="compare-cell" key={`${product.id}-weight`}>
-                      {product.baseWeight} chi
+                      {formatWeightInGrams(product.baseWeight)}
                     </div>
                   ))}
                 </div>

@@ -6,25 +6,54 @@ const ORDER_STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Đã hủy" },
 ];
 
+const ORDERS_PAGE_SIZE = 10;
+
 function OrdersSection({
   orders,
   summary,
   totalOrders,
+  filteredOrdersCount,
   searchKeyword,
   statusFilter,
+  currentPage,
+  totalPages,
   updatingOrderId,
   onSearchChange,
   onStatusFilterChange,
+  onPageChange,
   onRefresh,
   onUpdateOrderStatus,
 }) {
+  const visiblePageNumbers = [];
+  const pageWindowStart = Math.max(1, currentPage - 2);
+  const pageWindowEnd = Math.min(totalPages, currentPage + 2);
+
+  if (pageWindowStart > 1) {
+    visiblePageNumbers.push(1);
+    if (pageWindowStart > 2) {
+      visiblePageNumbers.push("start-ellipsis");
+    }
+  }
+
+  for (let pageNumber = pageWindowStart; pageNumber <= pageWindowEnd; pageNumber += 1) {
+    visiblePageNumbers.push(pageNumber);
+  }
+
+  if (pageWindowEnd < totalPages) {
+    if (pageWindowEnd < totalPages - 1) {
+      visiblePageNumbers.push("end-ellipsis");
+    }
+    visiblePageNumbers.push(totalPages);
+  }
+
   return (
     <section id="orders" className="orders-section orders-admin-section">
       <div className="section-title orders-admin-title">
         <div>
           <h3>Danh sách đơn hàng</h3>
           <p>
-            Đang hiển thị {orders.length}/{totalOrders} đơn hàng.
+            Đang hiển thị {orders.length}/{filteredOrdersCount} đơn hàng phù hợp. Tổng tất cả:{" "}
+            {totalOrders}.
           </p>
         </div>
         <button type="button" onClick={onRefresh}>
@@ -156,6 +185,47 @@ function OrdersSection({
           </tbody>
         </table>
       </div>
+
+      {filteredOrdersCount > ORDERS_PAGE_SIZE ? (
+        <div className="pagination-bar">
+          <button
+            type="button"
+            className="pagination-button"
+            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Truoc
+          </button>
+
+          <div className="pagination-pages">
+            {visiblePageNumbers.map((pageNumber) =>
+              typeof pageNumber === "number" ? (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={`pagination-page ${currentPage === pageNumber ? "active" : ""}`}
+                  onClick={() => onPageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ) : (
+                <span key={pageNumber} className="pagination-ellipsis">
+                  ...
+                </span>
+              )
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="pagination-button"
+            onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Sau
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
