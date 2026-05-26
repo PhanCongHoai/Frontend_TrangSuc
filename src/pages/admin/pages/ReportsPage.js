@@ -54,6 +54,7 @@ function ReportsPage() {
   });
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [selectedChartPoint, setSelectedChartPoint] = useState(null);
 
   const yearOptions = useMemo(() => {
     const years = [];
@@ -168,6 +169,7 @@ function ReportsPage() {
         summary: data.summary || {},
         data: Array.isArray(data.data) ? data.data : [],
       });
+      setSelectedChartPoint(null);
       setStatus("success");
     } catch (fetchError) {
       setStatus("error");
@@ -197,6 +199,40 @@ function ReportsPage() {
 
     return `Doanh thu 5 năm gần nhất đến ${filters.year}`;
   }, [filters.month, filters.period, filters.year]);
+
+  const selectedChartTooltip = useMemo(() => {
+    if (!selectedChartPoint) {
+      return null;
+    }
+
+    const pointList =
+      selectedChartPoint.series === "completed"
+        ? chartGeometry.completedPoints
+        : chartGeometry.revenuePoints;
+    const point = pointList.find((item) => item.bucket === selectedChartPoint.bucket);
+
+    if (!point) {
+      return null;
+    }
+
+    const tooltipWidth = 196;
+    const tooltipHeight = 64;
+    const minX = chartGeometry.padding.left;
+    const maxX = chartGeometry.width - chartGeometry.padding.right - tooltipWidth;
+    const tooltipX = Math.min(Math.max(point.x - tooltipWidth / 2, minX), maxX);
+    const tooltipY = Math.max(chartGeometry.padding.top + 8, point.y - tooltipHeight - 18);
+
+    return {
+      point,
+      tooltipX,
+      tooltipY,
+      title: selectedChartPoint.series === "completed" ? "Doanh thu hoàn tất" : "Doanh thu",
+      value:
+        selectedChartPoint.series === "completed"
+          ? Number(point.completedRevenue || point.value || 0)
+          : Number(point.revenue || point.value || 0),
+    };
+  }, [chartGeometry, selectedChartPoint]);
 
   return (
     <section className="panel-page reports-page">
@@ -331,6 +367,7 @@ function ReportsPage() {
                 width={chartGeometry.plotWidth}
                 height={chartGeometry.plotHeight}
                 rx="16"
+                onClick={() => setSelectedChartPoint(null)}
               />
 
               {chartGeometry.ticks.map((tick) => (
@@ -364,11 +401,22 @@ function ReportsPage() {
               {chartGeometry.completedPoints.map((point) =>
                 point.value > 0 ? (
                   <circle
-                    className="report-completed-point"
+                    className={`report-completed-point${
+                      selectedChartPoint?.series === "completed" &&
+                      selectedChartPoint?.bucket === point.bucket
+                        ? " selected"
+                        : ""
+                    }`}
                     key={`completed-${point.bucket}`}
                     cx={point.x}
                     cy={point.y}
                     r="4"
+                    onClick={() =>
+                      setSelectedChartPoint({
+                        series: "completed",
+                        bucket: point.bucket,
+                      })
+                    }
                   >
                     <title>{`${point.label} hoàn tất: ${formatMoney(point.value)}`}</title>
                   </circle>
@@ -377,12 +425,33 @@ function ReportsPage() {
 
               {chartGeometry.revenuePoints.map((point, index) => (
                 <g className="report-revenue-point-group" key={point.bucket}>
-                  <circle className="report-revenue-hit-area" cx={point.x} cy={point.y} r="16">
+                  <circle
+                    className="report-revenue-hit-area"
+                    cx={point.x}
+                    cy={point.y}
+                    r="16"
+                    onClick={() =>
+                      setSelectedChartPoint({
+                        series: "revenue",
+                        bucket: point.bucket,
+                      })
+                    }
+                  >
                     <title>{`${point.label}: ${formatMoney(point.value)} - ${Number(
                       point.orders || 0,
                     ).toLocaleString("vi-VN")} đơn`}</title>
                   </circle>
-                  <circle className="report-revenue-point" cx={point.x} cy={point.y} r="5" />
+                  <circle
+                    className={`report-revenue-point${
+                      selectedChartPoint?.series === "revenue" &&
+                      selectedChartPoint?.bucket === point.bucket
+                        ? " selected"
+                        : ""
+                    }`}
+                    cx={point.x}
+                    cy={point.y}
+                    r="5"
+                  />
                   {index % chartGeometry.labelStep === 0 ||
                   index === chartGeometry.revenuePoints.length - 1 ? (
                     <text
@@ -395,6 +464,46 @@ function ReportsPage() {
                   ) : null}
                 </g>
               ))}
+              {selectedChartTooltip ? (
+                <g className="report-chart-tooltip">
+                  <line
+                    className="report-chart-tooltip-line"
+                    x1={selectedChartTooltip.point.x}
+                    y1={selectedChartTooltip.point.y - 8}
+                    x2={selectedChartTooltip.point.x}
+                    y2={selectedChartTooltip.tooltipY + 64}
+                  />
+                  <rect
+                    className="report-chart-tooltip-box"
+                    x={selectedChartTooltip.tooltipX}
+                    y={selectedChartTooltip.tooltipY}
+                    width="196"
+                    height="64"
+                    rx="14"
+                  />
+                  <text
+                    className="report-chart-tooltip-title"
+                    x={selectedChartTooltip.tooltipX + 14}
+                    y={selectedChartTooltip.tooltipY + 22}
+                  >
+                    {`${selectedChartTooltip.point.label} • ${selectedChartTooltip.title}`}
+                  </text>
+                  <text
+                    className="report-chart-tooltip-value"
+                    x={selectedChartTooltip.tooltipX + 14}
+                    y={selectedChartTooltip.tooltipY + 44}
+                  >
+                    {formatMoney(selectedChartTooltip.value)}
+                  </text>
+                  <text
+                    className="report-chart-tooltip-meta"
+                    x={selectedChartTooltip.tooltipX + 14}
+                    y={selectedChartTooltip.tooltipY + 58}
+                  >
+                    {`${Number(selectedChartTooltip.point.orders || 0).toLocaleString("vi-VN")} đơn`}
+                  </text>
+                </g>
+              ) : null}
             </svg>
             <div className="report-chart-legend" aria-hidden="true">
               <span className="report-legend-item revenue">Doanh thu</span>

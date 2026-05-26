@@ -2251,7 +2251,7 @@
 
 .report-revenue-hit-area {
   fill: transparent;
-  cursor: default;
+  cursor: pointer;
 }
 
 .report-revenue-point {
@@ -2268,10 +2268,22 @@
   fill: #f4c84b;
 }
 
+.report-revenue-point.selected {
+  r: 7;
+  fill: #f4c84b;
+}
+
 .report-completed-point {
   fill: #55d6be;
   stroke: #0d0d0d;
   stroke-width: 2;
+  cursor: pointer;
+}
+
+.report-completed-point.selected {
+  r: 6;
+  stroke: #f3ebcf;
+  stroke-width: 3;
 }
 
 .report-chart-x-label {
@@ -2279,6 +2291,36 @@
   font-size: 12px;
   font-weight: 800;
   text-anchor: middle;
+}
+
+.report-chart-tooltip-line {
+  stroke: rgba(244, 200, 75, 0.32);
+  stroke-width: 2;
+  stroke-dasharray: 4 5;
+}
+
+.report-chart-tooltip-box {
+  fill: rgba(11, 11, 11, 0.94);
+  stroke: rgba(244, 200, 75, 0.3);
+  stroke-width: 1;
+}
+
+.report-chart-tooltip-title {
+  fill: rgba(243, 235, 207, 0.86);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.report-chart-tooltip-value {
+  fill: #f4c84b;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.report-chart-tooltip-meta {
+  fill: rgba(243, 235, 207, 0.72);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .report-chart-legend {

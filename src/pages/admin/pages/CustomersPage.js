@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CustomersSection from "../components/CustomersSection";
-import { getAuthHeaders } from "../../../utils/auth";
+import { clearAuthSession, getAuthHeaders } from "../../../utils/auth";
 import { buildApiUrl } from "../../../utils/api";
 
 function CustomersPage() {
+  const navigate = useNavigate();
   const [customerStats, setCustomerStats] = useState([]);
   const [customerList, setCustomerList] = useState([]);
   const [status, setStatus] = useState("loading");
@@ -14,7 +16,7 @@ function CustomersPage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [blockReason, setBlockReason] = useState("");
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setStatus("loading");
       setError("");
@@ -23,6 +25,17 @@ function CustomersPage() {
         headers: getAuthHeaders(),
       });
       const data = await response.json();
+
+      if (response.status === 401 || response.status === 403) {
+        clearAuthSession();
+        navigate("/login", {
+          replace: true,
+          state: { from: "/admin/customers", adminOnly: true },
+        });
+        throw new Error(
+          "Phiên đăng nhập admin đã hết hạn hoặc không còn quyền truy cập. Vui lòng đăng nhập lại."
+        );
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Không thể tải dữ liệu khách hàng.");
@@ -38,11 +51,11 @@ function CustomersPage() {
       setStatus("error");
       setError(fetchError.message || "Không thể tải dữ liệu khách hàng.");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [fetchCustomers]);
 
   const filteredCustomerList = useMemo(() => {
     const keyword = customerSearch.trim().toLowerCase();
@@ -101,6 +114,17 @@ function CustomersPage() {
       );
 
       const data = await response.json();
+
+      if (response.status === 401 || response.status === 403) {
+        clearAuthSession();
+        navigate("/login", {
+          replace: true,
+          state: { from: "/admin/customers", adminOnly: true },
+        });
+        throw new Error(
+          "Phiên đăng nhập admin đã hết hạn hoặc không còn quyền truy cập. Vui lòng đăng nhập lại."
+        );
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Không thể cập nhật trạng thái tài khoản.");
