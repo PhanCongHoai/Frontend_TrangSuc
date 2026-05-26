@@ -92,6 +92,20 @@
   filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.34));
 }
 
+.product-gallery-main-empty {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 560px;
+  padding: 24px;
+  color: rgba(247, 242, 223, 0.68);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .product-detail-badge {
   position: absolute;
   top: 18px;

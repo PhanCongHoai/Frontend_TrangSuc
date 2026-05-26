@@ -130,7 +130,9 @@ function OrdersPage() {
       setFeedback({
         type: "success",
         title: "Đã cập nhật đơn hàng.",
-        message: `Đơn ${String(orderId).padStart(5, "0")} đã chuyển sang ${data.order?.statusLabel || nextStatus}.`,
+        message: `Đơn ${String(orderId).padStart(5, "0")} đã chuyển sang ${
+          data.order?.statusLabel || nextStatus
+        }.`,
       });
       await loadOrders();
     } catch (updateError) {
@@ -146,11 +148,6 @@ function OrdersPage() {
 
   return (
     <section className="panel-page">
-      <div className="page-head">
-        <h1>Quản lý đơn hàng</h1>
-        <p>Theo dõi đơn thật từ database, lọc nhanh và cập nhật trạng thái xử lý.</p>
-      </div>
-
       {status === "loading" ? (
         <div className="admin-notice">
           <strong>Đang tải danh sách đơn hàng...</strong>

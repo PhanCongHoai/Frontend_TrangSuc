@@ -430,7 +430,7 @@
 .product-grid {
   margin-top: 24px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -562,6 +562,21 @@
   object-fit: cover;
   object-position: center;
   transform: scale(1.01);
+}
+
+.product-visual-image-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  color: rgba(247, 242, 223, 0.68);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(34, 34, 34, 0.92), rgba(12, 12, 12, 0.98));
 }
 
 .product-badge {
@@ -749,6 +764,10 @@
 @media (max-width: 1200px) {
   .collections {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

@@ -86,7 +86,7 @@ export const fetchCompareConfig = async () => {
     const data = await response.json();
 
     if (!response.ok || !data?.success || !data.config) {
-      throw new Error(data?.message || "Cannot load compare config.");
+      throw new Error(data?.message || "Không thể tải cấu hình so sánh.");
     }
 
     const normalizedConfig = normalizeCompareConfig(data.config);

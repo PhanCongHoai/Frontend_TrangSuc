@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAuthHeaders } from "../../../utils/auth";
-import { buildApiUrl } from "../../../utils/api";
+import { buildApiUrl, buildAssetUrl, normalizeApiMessage } from "../../../utils/api";
 import {
   markProductBlocked,
   notifyProductCatalogChanged,
@@ -103,7 +103,15 @@ function readFileAsDataUrl(file) {
 }
 
 function getMainImage(product) {
-  return product.images.find((image) => image.is_main) || product.images[0] || null;
+  const selectedImage =
+    product.images.find((image) => image.is_main) || product.images[0] || null;
+
+  return selectedImage
+    ? {
+        ...selectedImage,
+        url: buildAssetUrl(selectedImage.url),
+      }
+    : null;
 }
 
 function getPrimaryVariant(product) {
@@ -153,7 +161,7 @@ function buildFormFromProduct(product) {
               ? ""
               : variant.stock?.warehouse_location || "",
         }],
-    mainImageUrl: mainImage?.url || "",
+    mainImageUrl: buildAssetUrl(mainImage?.url || ""),
     laborCost: String(product.pricing?.labor_cost || ""),
     stoneCost: String(product.pricing?.stone_cost || ""),
     markupRate: String(product.pricing?.markup_rate || ""),
@@ -200,9 +208,9 @@ function ProductsPage() {
       const categoriesData = await categoriesResponse.json();
       const productsData = await productsResponse.json();
       const materialsData = await materialsResponse.json();
-      if (!categoriesResponse.ok || !categoriesData.success) throw new Error(categoriesData.message || "Không thể tải danh mục.");
-      if (!productsResponse.ok || !productsData.success) throw new Error(productsData.message || "Không thể tải sản phẩm.");
-      if (!materialsResponse.ok || !materialsData.success) throw new Error(materialsData.message || "Không thể tải chất liệu.");
+      if (!categoriesResponse.ok || !categoriesData.success) throw new Error(normalizeApiMessage(categoriesData.message, "Không thể tải danh mục."));
+      if (!productsResponse.ok || !productsData.success) throw new Error(normalizeApiMessage(productsData.message, "Không thể tải sản phẩm."));
+      if (!materialsResponse.ok || !materialsData.success) throw new Error(normalizeApiMessage(materialsData.message, "Không thể tải chất liệu."));
       setCategoryRecords(Array.isArray(categoriesData.categories) ? categoriesData.categories : []);
       setProductList(Array.isArray(productsData.products) ? productsData.products : []);
       setMaterialOptions(Array.isArray(materialsData.materials) ? materialsData.materials : []);
@@ -213,7 +221,7 @@ function ProductsPage() {
       setProductList([]);
       setMaterialOptions([]);
       setStatus("error");
-      setError(fetchError.message || "Không thể tải dữ liệu sản phẩm.");
+      setError(normalizeApiMessage(fetchError.message, "Không thể tải dữ liệu sản phẩm."));
     }
   };
 
@@ -451,13 +459,13 @@ function ProductsPage() {
       setError("");
       const response = await fetch(buildApiUrl(`/api/products/admin/${productId}/hide`), { method: "PATCH", headers: getAuthHeaders() });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Không thể ẩn sản phẩm.");
+      if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể ẩn sản phẩm."));
       setProductList((prev) => prev.map((product) => product.id === productId ? { ...product, status: "HIDDEN", status_label: normalizeStatusLabel("HIDDEN") } : product));
       markProductBlocked(productId, "hidden");
       notifyProductCatalogChanged("hidden", productId);
     } catch (hideError) {
       console.error("Hide product error:", hideError);
-      setError(hideError.message || "Không thể ẩn sản phẩm.");
+      setError(normalizeApiMessage(hideError.message, "Không thể ẩn sản phẩm."));
     } finally {
       setProcessingProductId(null);
     }
@@ -469,13 +477,13 @@ function ProductsPage() {
       setError("");
       const response = await fetch(buildApiUrl(`/api/products/admin/${productId}/show`), { method: "PATCH", headers: getAuthHeaders() });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Không thể hiện sản phẩm.");
+      if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể hiện sản phẩm."));
       setProductList((prev) => prev.map((product) => product.id === productId ? { ...product, status: "ACTIVE", status_label: normalizeStatusLabel("ACTIVE") } : product));
       unmarkProductBlocked(productId, "shown");
       notifyProductCatalogChanged("shown", productId);
     } catch (showError) {
       console.error("Show product error:", showError);
-      setError(showError.message || "Không thể hiện sản phẩm.");
+      setError(normalizeApiMessage(showError.message, "Không thể hiện sản phẩm."));
     } finally {
       setProcessingProductId(null);
     }
@@ -490,13 +498,13 @@ function ProductsPage() {
       setError("");
       const response = await fetch(buildApiUrl(`/api/products/admin/${productId}`), { method: "DELETE", headers: getAuthHeaders() });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Không thể xóa sản phẩm.");
+      if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể xóa sản phẩm."));
       setProductList((prev) => prev.filter((product) => product.id !== productId));
       unmarkProductBlocked(productId, "deleted");
       notifyProductCatalogChanged("deleted", productId);
     } catch (deleteError) {
       console.error("Delete product error:", deleteError);
-      setError(deleteError.message || "Không thể xóa sản phẩm.");
+      setError(normalizeApiMessage(deleteError.message, "Không thể xóa sản phẩm."));
     } finally {
       setProcessingProductId(null);
     }
@@ -528,7 +536,7 @@ function ProductsPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || "Không thể ẩn tất cả sản phẩm.");
+        throw new Error(normalizeApiMessage(data.message, "Không thể ẩn tất cả sản phẩm."));
       }
 
       const productIds = productList.map((product) => Number(product.id)).filter(Boolean);
@@ -547,7 +555,7 @@ function ProductsPage() {
     } catch (hideError) {
       console.error("Hide all products error:", hideError);
       setSubmitMessage("");
-      setError(hideError.message || "Không thể ẩn tất cả sản phẩm.");
+      setError(normalizeApiMessage(hideError.message, "Không thể ẩn tất cả sản phẩm."));
     } finally {
       setIsHidingAllProducts(false);
     }
@@ -579,7 +587,7 @@ function ProductsPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || "Khong the xoa tat ca san pham.");
+        throw new Error(normalizeApiMessage(data.message, "Không thể xóa tất cả sản phẩm."));
       }
 
       const deletedIds = productList.map((product) => Number(product.id)).filter(Boolean);
@@ -592,7 +600,7 @@ function ProductsPage() {
     } catch (deleteError) {
       console.error("Delete all products error:", deleteError);
       setSubmitMessage("");
-      setError(deleteError.message || "Không thể xóa tất cả sản phẩm.");
+      setError(normalizeApiMessage(deleteError.message, "Không thể xóa tất cả sản phẩm."));
     } finally {
       setIsDeletingAllProducts(false);
     }
@@ -636,7 +644,7 @@ function ProductsPage() {
         }),
       });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Không thể lưu sản phẩm.");
+      if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể lưu sản phẩm."));
       const changedProductId = editingProductId || data.productId || data.product?.id || null;
       setSubmitMessage(isEditMode ? `Đã cập nhật sản phẩm: ${form.name.trim()}.` : `Đã thêm sản phẩm mới: ${form.name.trim()}.`);
       if (form.status === "HIDDEN") markProductBlocked(changedProductId, "hidden");

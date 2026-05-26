@@ -30,9 +30,6 @@ import {
 import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import "./ProductDetailPage.css";
 
-const FALLBACK_IMAGE =
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1xp79XGKoIg-gZeZiRg2G7mpp2A6kH-AWow&s";
-
 function BuyNowIcon(props) {
   return (
     <svg
@@ -95,7 +92,7 @@ function ProductDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [product, setProduct] = useState(null);
-  const [activeImage, setActiveImage] = useState(FALLBACK_IMAGE);
+  const [activeImage, setActiveImage] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -138,7 +135,7 @@ function ProductDetailPage() {
     const mainImage =
       normalizedProduct.images.find((item) => item.isMain)?.url ||
       normalizedProduct.images[0]?.url ||
-      FALLBACK_IMAGE;
+      "";
 
     setProduct(normalizedProduct);
     setActiveImage((currentImage) => {
@@ -489,7 +486,7 @@ function ProductDetailPage() {
       productId: Number(product.id),
       variantId: Number(selectedVariant.id),
       name: product.name,
-      image: activeImage || product.images[0]?.url || FALLBACK_IMAGE,
+      image: activeImage || product.images[0]?.url || "",
       size: selectedVariant.size || "Chu?n",
       stockLabel: `${Number(selectedVariant.quantity || 0)} s?n ph?m`,
       price: selectedUnitPrice,
@@ -586,7 +583,7 @@ function ProductDetailPage() {
     const nextCompareItem = {
       productId,
       name: product.name,
-      image: activeImage || product.images[0]?.url || FALLBACK_IMAGE,
+      image: activeImage || product.images[0]?.url || "",
       price: formatCurrency(selectedUnitPrice),
       material: product.material?.label || "",
       category: product.category?.name || "",
@@ -881,9 +878,7 @@ function ProductDetailPage() {
     );
   }
 
-  const gallery = product.images.length
-    ? product.images
-    : [{ id: "fallback", url: FALLBACK_IMAGE, isMain: true }];
+  const gallery = product.images.length ? product.images : [];
 
   return (
     <div className="product-detail-page">
@@ -913,16 +908,20 @@ function ProductDetailPage() {
           <div className="product-detail-media-column">
             <div className="product-gallery-panel">
               <div className="product-gallery-main">
-                <img
-                  className="product-gallery-main-image"
-                  src={activeImage}
-                  alt={product.name}
-                  loading="eager"
-                  decoding="async"
-                />
+                {activeImage ? (
+                  <img
+                    className="product-gallery-main-image"
+                    src={activeImage}
+                    alt={product.name}
+                    loading="eager"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="product-gallery-main-empty">Không có ảnh sản phẩm</div>
+                )}
               </div>
 
-              <div className="product-gallery-thumbs">
+              {gallery.length ? <div className="product-gallery-thumbs">
                 {gallery.map((image) => (
                   <button
                     key={image.id}
@@ -941,7 +940,7 @@ function ProductDetailPage() {
                     />
                   </button>
                 ))}
-              </div>
+              </div> : null}
             </div>
 
             <section className="product-review-section">

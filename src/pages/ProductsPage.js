@@ -12,7 +12,10 @@ import {
   subscribeCompareChange,
 } from "../utils/compare";
 import { buildApiUrl, buildAssetUrl } from "../utils/api";
-import { subscribeProductVisibilityChange } from "../utils/productSync";
+import {
+  getLatestProductCatalogSync,
+  subscribeProductVisibilityChange,
+} from "../utils/productSync";
 import "./ProductsPage.css";
 
 const API_BASE_URL = buildApiUrl("/api/products");
@@ -78,8 +81,14 @@ function ProductsPage() {
         if (query.category) params.set("category", query.category);
         if (query.sort) params.set("sort", query.sort);
         params.set("in_stock", "1");
+        params.set(
+          "t",
+          String(getLatestProductCatalogSync().changedAt || Date.now())
+        );
 
-        const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+        const response = await fetch(`${API_BASE_URL}?${params.toString()}`, {
+          cache: "no-store",
+        });
         const data = await response.json();
 
         if (!response.ok || !data?.success) {
@@ -273,11 +282,17 @@ function ProductsPage() {
             {products.map((product) => (
               <article className="products-card product-showcase-card" key={product.id}>
                 <Link to={`/products/${product.id}`} className="products-image-link product-visual">
-                  <img
-                    className="product-visual-image"
-                    src={buildAssetUrl(product.image)}
-                    alt={product.name}
-                  />
+                  {product.image ? (
+                    <img
+                      className="product-visual-image"
+                      src={buildAssetUrl(product.image)}
+                      alt={product.name}
+                    />
+                  ) : (
+                    <div className="product-visual-image product-visual-image-empty">
+                      Không có ảnh
+                    </div>
+                  )}
                 </Link>
                 <div className="products-card-body product-body">
                   <p className="products-category product-category">{product.category}</p>

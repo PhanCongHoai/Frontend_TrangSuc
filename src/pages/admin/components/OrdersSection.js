@@ -48,28 +48,6 @@ function OrdersSection({
 
   return (
     <section id="orders" className="orders-section orders-admin-section">
-      <div className="section-title orders-admin-title">
-        <div>
-          <h3>Danh sách đơn hàng</h3>
-          <p>
-            Đang hiển thị {orders.length}/{filteredOrdersCount} đơn hàng phù hợp. Tổng tất cả:{" "}
-            {totalOrders}.
-          </p>
-        </div>
-        <button type="button" onClick={onRefresh}>
-          Làm mới
-        </button>
-      </div>
-
-      <div className="customer-stats-grid orders-summary-grid">
-        {summary.map((item) => (
-          <article key={item.label} className="customer-stat-card">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </article>
-        ))}
-      </div>
-
       <div className="orders-admin-toolbar">
         <label className="customer-search orders-admin-search">
           <span>Tìm đơn hàng</span>
@@ -106,6 +84,19 @@ function OrdersSection({
             ))}
           </select>
         </label>
+
+        <button type="button" className="orders-refresh-button" onClick={onRefresh}>
+          Làm mới
+        </button>
+      </div>
+
+      <div className="customer-stats-grid orders-summary-grid">
+        {summary.map((item) => (
+          <article key={item.label} className="customer-stat-card">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
       </div>
 
       <div className="orders-table-wrap">
@@ -226,6 +217,11 @@ function OrdersSection({
           </button>
         </div>
       ) : null}
+
+      <p className="orders-admin-footnote">
+        Đang hiển thị {orders.length}/{filteredOrdersCount} đơn hàng phù hợp. Tổng tất cả:{" "}
+        {totalOrders}.
+      </p>
     </section>
   );
 }

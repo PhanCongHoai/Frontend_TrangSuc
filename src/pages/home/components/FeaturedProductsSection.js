@@ -20,7 +20,7 @@ const EMPTY_TITLE = "Chưa có sản phẩm trong danh mục này";
 const EMPTY_COPY =
   'Thử chọn danh mục con hoặc quay lại mục "Tất cả" để xem toàn bộ mẫu.';
 
-const PRODUCT_PAGE_SIZE = 8;
+const PRODUCT_PAGE_SIZE = 10;
 const LOAD_MORE_TEXT = "Xem thêm";
 
 function FeaturedProductsSection({ collections, products }) {
@@ -320,13 +320,19 @@ function FeaturedProductsSection({ collections, products }) {
               key={product.id}
             >
               <div className="product-visual">
-                <img
-                  className="product-visual-image"
-                  src={buildAssetUrl(product.image)}
-                  alt={product.name}
-                  loading="lazy"
-                  decoding="async"
-                />
+                {product.image ? (
+                  <img
+                    className="product-visual-image"
+                    src={buildAssetUrl(product.image)}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="product-visual-image product-visual-image-empty">
+                    Không có ảnh
+                  </div>
+                )}
               </div>
 
               <div className="product-body">

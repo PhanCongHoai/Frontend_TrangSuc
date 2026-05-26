@@ -9,6 +9,7 @@ import {
 } from "./data/homeData";
 import {
   getBlockedProductIds,
+  getLatestProductCatalogSync,
   subscribeProductVisibilityChange,
 } from "../../utils/productSync";
 import {
@@ -66,8 +67,13 @@ function HomePage() {
   const fetchFeaturedProducts = async () => {
     try {
       const pageSize = 48;
+      const latestProductSync = getLatestProductCatalogSync();
+      const cacheKey = latestProductSync.changedAt || Date.now();
       const firstResponse = await fetch(
-        `${buildApiUrl("/api/products")}?page=1&limit=${pageSize}&in_stock=1`
+        `${buildApiUrl("/api/products")}?page=1&limit=${pageSize}&in_stock=1&t=${cacheKey}`,
+        {
+          cache: "no-store",
+        }
       );
       const firstData = await firstResponse.json();
 
@@ -78,7 +84,12 @@ function HomePage() {
             ? await Promise.all(
                 Array.from({ length: totalPages - 1 }, (_, index) =>
                   fetch(
-                    `${buildApiUrl("/api/products")}?page=${index + 2}&limit=${pageSize}&in_stock=1`
+                    `${buildApiUrl("/api/products")}?page=${
+                      index + 2
+                    }&limit=${pageSize}&in_stock=1&t=${cacheKey}`,
+                    {
+                      cache: "no-store",
+                    }
                   ).then((response) => response.json())
                 )
               )

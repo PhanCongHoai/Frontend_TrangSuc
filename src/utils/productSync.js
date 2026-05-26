@@ -36,6 +36,28 @@ export function getBlockedProductIds() {
   return readBlockedProductIds();
 }
 
+export function getLatestProductCatalogSync() {
+  try {
+    const rawValue = localStorage.getItem(PRODUCT_CATALOG_SYNC_KEY);
+    const parsedValue = rawValue ? JSON.parse(rawValue) : null;
+
+    return {
+      productId: Number(parsedValue?.productId || 0) || null,
+      reason: String(parsedValue?.reason || "sync"),
+      blockedIds: readBlockedProductIds(),
+      changedAt: Number(parsedValue?.changedAt || 0) || 0,
+    };
+  } catch (error) {
+    console.error("Read product catalog sync error:", error);
+    return {
+      productId: null,
+      reason: "sync",
+      blockedIds: readBlockedProductIds(),
+      changedAt: 0,
+    };
+  }
+}
+
 export function isProductBlocked(productId) {
   return readBlockedProductIds().includes(Number(productId));
 }
