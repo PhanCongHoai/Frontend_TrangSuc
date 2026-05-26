@@ -367,7 +367,7 @@ function ReportsPage() {
                 width={chartGeometry.plotWidth}
                 height={chartGeometry.plotHeight}
                 rx="16"
-                onClick={() => setSelectedChartPoint(null)}
+                onMouseEnter={() => setSelectedChartPoint(null)}
               />
 
               {chartGeometry.ticks.map((tick) => (
@@ -411,12 +411,13 @@ function ReportsPage() {
                     cx={point.x}
                     cy={point.y}
                     r="4"
-                    onClick={() =>
+                    onMouseEnter={() =>
                       setSelectedChartPoint({
                         series: "completed",
                         bucket: point.bucket,
                       })
                     }
+                    onMouseLeave={() => setSelectedChartPoint(null)}
                   >
                     <title>{`${point.label} hoàn tất: ${formatMoney(point.value)}`}</title>
                   </circle>
@@ -430,12 +431,13 @@ function ReportsPage() {
                     cx={point.x}
                     cy={point.y}
                     r="16"
-                    onClick={() =>
+                    onMouseEnter={() =>
                       setSelectedChartPoint({
                         series: "revenue",
                         bucket: point.bucket,
                       })
                     }
+                    onMouseLeave={() => setSelectedChartPoint(null)}
                   >
                     <title>{`${point.label}: ${formatMoney(point.value)} - ${Number(
                       point.orders || 0,
