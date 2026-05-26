@@ -92,6 +92,7 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
   const imageInputRef = useRef(null);
 
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const isAuthenticated = Boolean(currentUser?.id);
   const canSendImage = Boolean(currentUser?.id);
 
   useEffect(() => {
@@ -154,6 +155,11 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
     [navigate]
   );
 
+  const handleLoginRequired = useCallback(() => {
+    setError("Vui lòng đăng nhập để nhắn tin với tư vấn viên.");
+    navigate("/login");
+  }, [navigate]);
+
   useEffect(() => {
     if (!isOpen) {
       setSelectedImage(null);
@@ -170,6 +176,14 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
 
   useEffect(() => {
     if (!isOpen) {
+      return undefined;
+    }
+
+    if (!isAuthenticated) {
+      setConversation(null);
+      setMessages([]);
+      setLoading(false);
+      setError("");
       return undefined;
     }
 
@@ -220,10 +234,10 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
     return () => {
       isMounted = false;
     };
-  }, [handleAuthSessionError, isOpen, syncSeenState]);
+  }, [handleAuthSessionError, isAuthenticated, isOpen, syncSeenState]);
 
   useEffect(() => {
-    if (!isOpen || !conversation?.id) {
+    if (!isOpen || !isAuthenticated || !conversation?.id) {
       return undefined;
     }
 
@@ -250,7 +264,7 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
     return () => {
       eventSource.close();
     };
-  }, [conversation?.id, identity, isOpen, syncSeenState]);
+  }, [conversation?.id, identity, isAuthenticated, isOpen, syncSeenState]);
 
   useEffect(() => {
     if (!isOpen || !listRef.current) {
@@ -294,6 +308,11 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
     const nextMessage = draft.trim();
     const nextImage = selectedImage;
     const activeUser = getCurrentUser();
+
+    if (!activeUser?.id) {
+      handleLoginRequired();
+      return;
+    }
 
     if (!nextMessage && !nextImage) {
       return;
@@ -518,14 +537,23 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
       </div>
 
       <div className="chat-widget-body" ref={listRef}>
-        {loading ? <p className="chat-widget-state">Đang tải cuộc trò chuyện...</p> : null}
-        {!loading && !messages.length ? (
+        {!isAuthenticated ? (
+          <div className="chat-login-prompt">
+            <strong>Đăng nhập để nhắn tin</strong>
+            <p>Vui lòng đăng nhập trước khi trò chuyện với tư vấn viên.</p>
+            <button type="button" onClick={handleLoginRequired}>
+              Đăng nhập
+            </button>
+          </div>
+        ) : null}
+        {isAuthenticated && loading ? <p className="chat-widget-state">Đang tải cuộc trò chuyện...</p> : null}
+        {isAuthenticated && !loading && !messages.length ? (
           <p className="chat-widget-state">
             Chào bạn, hãy để lại tin nhắn. Bên mình sẽ phản hồi ngay khi có mặt.
           </p>
         ) : null}
 
-        {messages.map((message) => {
+        {isAuthenticated && messages.map((message) => {
           const isOwnMessage = resolveOwnMessage(message);
 
           return (
@@ -575,7 +603,9 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
           <button
             type="button"
             className="chat-attach-button"
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() =>
+              canSendImage ? imageInputRef.current?.click() : handleLoginRequired()
+            }
             disabled={!canSendImage}
             aria-label={canSendImage ? "Chọn ảnh" : "Đăng nhập để gửi ảnh"}
             title={canSendImage ? "Chọn ảnh" : "Đăng nhập để gửi ảnh"}
@@ -585,14 +615,15 @@ function ChatWidget({ isOpen, onClose, onMessagesSeen }) {
           <textarea
             value={draft}
             rows={1}
-            placeholder="Nhập tin nhắn..."
+            placeholder={isAuthenticated ? "Nhập tin nhắn..." : "Đăng nhập để nhắn tin..."}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={!isAuthenticated}
           />
           <button
             type="submit"
             className="chat-send-button"
-            disabled={sending || (!draft.trim() && !selectedImage)}
+            disabled={!isAuthenticated || sending || (!draft.trim() && !selectedImage)}
           >
             Gửi
           </button>

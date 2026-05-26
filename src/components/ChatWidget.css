@@ -75,6 +75,39 @@
   color: #ff8d8d;
 }
 
+.chat-login-prompt {
+  margin: auto 0;
+  padding: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 18px;
+  background: rgba(244, 200, 75, 0.06);
+  display: grid;
+  gap: 10px;
+  text-align: center;
+}
+
+.chat-login-prompt strong {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.chat-login-prompt p {
+  margin: 0;
+  color: rgba(239, 239, 239, 0.76);
+  line-height: 1.5;
+}
+
+.chat-login-prompt button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f4c84b, #e1af30);
+  color: #171717;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .chat-bubble-row {
   display: flex;
   justify-content: flex-start;
