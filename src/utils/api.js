@@ -38,18 +38,36 @@ export const API_BASE_URL =
 export const API_CONNECTION_LABEL = API_BASE_URL || "same-origin";
 
 function getApiOrigin() {
-  if (!API_BASE_URL) {
+  const baseUrl = String(API_BASE_URL || "").trim();
+
+  if (!baseUrl || baseUrl === "/") {
     if (typeof window === "undefined") {
       return "";
     }
-
     return window.location.origin;
   }
 
   try {
-    return new URL(API_BASE_URL).origin;
+    let urlString = baseUrl;
+    if (urlString.startsWith("//")) {
+      urlString = `https:${urlString}`;
+    } else if (!/^https?:\/\//i.test(urlString) && !urlString.startsWith("/")) {
+      urlString = `https://${urlString}`;
+    }
+
+    if (urlString.startsWith("/")) {
+      if (typeof window === "undefined") {
+        return "";
+      }
+      return window.location.origin;
+    }
+
+    return new URL(urlString).origin;
   } catch {
-    return "";
+    if (typeof window === "undefined") {
+      return "";
+    }
+    return window.location.origin;
   }
 }
 
@@ -74,29 +92,30 @@ export function buildAssetUrl(value = "") {
     return normalizedValue;
   }
 
-  const apiOrigin = getApiOrigin();
+  // 1. If it's already an absolute URL (external or legacy tunnel/localhost URL)
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    try {
+      const parsedUrl = new URL(normalizedValue);
+      // If it points to an uploads directory, rewrite it to use the current API origin
+      if (parsedUrl.pathname.startsWith("/uploads/")) {
+        const apiOrigin = getApiOrigin();
+        return apiOrigin
+          ? `${apiOrigin}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+          : normalizedValue;
+      }
+    } catch {}
+    return normalizedValue;
+  }
 
+  // 2. If it's a relative path starting with /
   if (normalizedValue.startsWith("/")) {
+    const apiOrigin = getApiOrigin();
     return apiOrigin ? `${apiOrigin}${normalizedValue}` : normalizedValue;
   }
 
-  if (!/^https?:\/\//i.test(normalizedValue)) {
-    return normalizedValue;
-  }
-
-  try {
-    const parsedUrl = new URL(normalizedValue);
-
-    if (parsedUrl.pathname.startsWith("/uploads/")) {
-      return apiOrigin
-        ? `${apiOrigin}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
-        : normalizedValue;
-    }
-
-    return normalizedValue;
-  } catch {
-    return normalizedValue;
-  }
+  // 3. Otherwise (e.g. "uploads/products/..."), normalize to start with /
+  const apiOrigin = getApiOrigin();
+  return apiOrigin ? `${apiOrigin}/${normalizedValue}` : `/${normalizedValue}`;
 }
 
 const API_MESSAGE_MAP = new Map([
