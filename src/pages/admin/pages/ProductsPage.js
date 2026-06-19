@@ -93,14 +93,7 @@ function normalizeFormPriceTiers(priceTiers) {
     );
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Không thể đọc tệp ảnh."));
-    reader.readAsDataURL(file);
-  });
-}
+
 
 function getMainImage(product) {
   const selectedImage =
@@ -394,18 +387,7 @@ function ProductsPage() {
     }));
   };
 
-  const handleImageFileChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      handleChange("mainImageUrl", dataUrl);
-      setSubmitError("");
-    } catch (imageError) {
-      console.error("Read image error:", imageError);
-      setSubmitError(imageError.message || "Không thể tải ảnh từ máy tính.");
-    }
-  };
+
 
   const resetForm = (clearMessage = true) => {
     setForm({
@@ -844,7 +826,19 @@ function ProductsPage() {
                     <p>Chưa có bậc giá. Nếu để trống, sản phẩm dùng giá tạm tính mặc định.</p>
                   )}
                 </div>
-                <label className="category-form-field category-form-field-wide"><span>Ảnh chính</span><input className="product-file-input" type="file" accept="image/*" onChange={handleImageFileChange} /><small className="field-hint">{form.mainImageUrl ? "Đã chọn ảnh từ máy tính hoặc ảnh hiện có." : "Chọn ảnh từ máy tính để làm ảnh chính."}</small></label>
+                <label className="category-form-field category-form-field-wide">
+                  <span>Địa chỉ ảnh (URL)</span>
+                  <input
+                    type="url"
+                    value={form.mainImageUrl}
+                    onChange={(event) => handleChange("mainImageUrl", event.target.value)}
+                    placeholder="VD: https://example.com/images/nhan.jpg"
+                    disabled={isViewMode}
+                  />
+                  <small className="field-hint">
+                    Nhập địa chỉ URL hình ảnh công khai (Không cho phép tải lên tệp ảnh từ máy tính local).
+                  </small>
+                </label>
                 {form.mainImageUrl ? <div className="product-image-preview category-form-field category-form-field-wide"><span>Xem trước ảnh</span><div className="product-image-preview-card"><img src={form.mainImageUrl} alt={form.name || "Ảnh sản phẩm"} /></div></div> : null}
                 <div className="product-price-preview category-form-field category-form-field-wide"><span>Giá tạm tính</span><div className="product-price-preview-card"><strong>{formatCurrency(estimatedSalePrice)}</strong><p>Giá vật liệu hiện tại: {formatCurrency(selectedMaterialOption?.base_sell_price || 0)} / đơn vị</p><p>Hệ thống tự tính từ giá vàng mới nhất, khối lượng gốc, chi phí công, chi phí đá và markup.</p></div></div>
               </div>
