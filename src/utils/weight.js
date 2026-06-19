@@ -1,17 +1,9 @@
-const CHI_TO_GRAMS = 3.75;
-
-export function convertChiToGrams(value) {
+export function formatWeightInGrams(value) {
   const normalizedValue = Number(value || 0);
 
   if (!Number.isFinite(normalizedValue)) {
-    return 0;
+    return "0 gam";
   }
 
-  return normalizedValue * CHI_TO_GRAMS;
-}
-
-export function formatWeightInGrams(value) {
-  const grams = convertChiToGrams(value);
-
-  return `${Number(grams.toFixed(2))} gam`;
+  return `${Number(normalizedValue.toFixed(2))} gam`;
 }
