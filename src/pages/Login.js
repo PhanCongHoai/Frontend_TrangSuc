@@ -14,6 +14,7 @@ const API_URL = buildApiUrl("/api/auth/login");
 const LOGIN_TIMEOUT_MS = 8000;
 function normalizeLoginError(data, status) {
   const rawMessage = String(data?.message || "").trim();
+  const lowerMessage = rawMessage.toLowerCase();
 
   if (
     data?.code === "ACCOUNT_BLOCKED" ||
@@ -21,6 +22,19 @@ function normalizeLoginError(data, status) {
     /blocked|disabled|bị chặn|bi chan/i.test(rawMessage)
   ) {
     return rawMessage || BLOCKED_ACCOUNT_MESSAGE;
+  }
+
+  if (lowerMessage.includes("incorrect password")) {
+    return "Mật khẩu không chính xác. Vui lòng thử lại.";
+  }
+  if (lowerMessage.includes("email not found")) {
+    return "Email không tồn tại trên hệ thống.";
+  }
+  if (lowerMessage.includes("please provide email and password")) {
+    return "Vui lòng nhập đầy đủ email và mật khẩu.";
+  }
+  if (lowerMessage.includes("server error")) {
+    return "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.";
   }
 
   return rawMessage || `Đăng nhập thất bại (HTTP ${status}).`;
