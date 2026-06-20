@@ -624,7 +624,7 @@ function ProductDetailPage() {
       }
     }
 
-    setCompareFeedback("Không thể thêm sản phẩm để so sánh lúc này.");
+    showToast("Không thể thêm sản phẩm để so sánh lúc này.", "error");
   };
 
   const handleReviewSubmit = async (event) => {
