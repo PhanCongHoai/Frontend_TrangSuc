@@ -6,6 +6,7 @@ import {
   SESSION_EXPIRED_MESSAGE,
   clearAuthSession,
   isAdminUser,
+  notifyAuthSessionChanged,
 } from "../utils/auth";
 import { buildApiUrl } from "../utils/api";
 
@@ -56,6 +57,8 @@ function Login() {
       if (data.user) {
         sessionStorage.setItem("currentUser", JSON.stringify(data.user));
       }
+
+      notifyAuthSessionChanged();
 
       const nextPath = redirectTarget || (isAdminUser(data.user) ? "/admin/dashboard" : "/");
       navigate(nextPath, { replace: true });

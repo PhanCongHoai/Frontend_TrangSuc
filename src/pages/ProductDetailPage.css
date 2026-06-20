@@ -331,10 +331,10 @@
 .product-buy-now-button,
 .product-compare-toggle {
   width: 100%;
-  min-height: 58px;
-  padding: 0 20px;
-  border-radius: 16px;
-  font-size: 15px;
+  min-height: 46px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 13px;
   font-weight: 800;
   font-family: inherit;
   line-height: 1.1;
@@ -349,12 +349,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .product-action-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
 
@@ -409,18 +409,73 @@
 .product-purchase-actions {
   margin-top: 24px;
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
-.product-cart-feedback {
-  margin: 10px 0 0;
-  color: rgba(239, 239, 239, 0.78);
+/* Toast Box Notification Style */
+.product-toast-box {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  z-index: 9999;
+  background: rgba(10, 10, 10, 0.98);
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  padding: 14px 22px;
+  min-width: 280px;
+  max-width: 420px;
+  animation: slideInToast 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInToast {
+  from {
+    transform: translateX(120%) translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+}
+
+.product-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
   font-size: 14px;
-  line-height: 1.5;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.product-cart-feedback.error {
+.product-toast-box.success {
+  border-color: #f4c84b;
+  box-shadow: 0 16px 36px rgba(244, 200, 75, 0.08);
+}
+
+.product-toast-box.success .toast-icon {
+  color: #f4c84b;
+  font-size: 18px;
+}
+
+.product-toast-box.error {
+  border-color: #ff8d8d;
+}
+
+.product-toast-box.error .toast-icon {
   color: #ff8d8d;
+  font-size: 18px;
+}
+
+.product-toast-box.info {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.product-toast-box.info .toast-icon {
+  color: #f4c84b;
+  font-size: 18px;
 }
 
 .product-review-section {
@@ -798,6 +853,7 @@
   }
 
   .product-purchase-actions {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 

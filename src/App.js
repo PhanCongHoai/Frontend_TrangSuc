@@ -12,6 +12,8 @@ import ComparePage from "./pages/ComparePage";
 import OrdersPage from "./pages/OrdersPage";
 import ProductsPage from "./pages/ProductsPage";
 import AboutPage from "./pages/AboutPage";
+import ArticlesPage from "./pages/ArticlesPage";
+import ArticleDetailPage from "./pages/ArticleDetailPage";
 import Admin from "./pages/admin/Admin";
 import BannersPage from "./pages/admin/pages/BannersPage";
 import ChatsPage from "./pages/admin/pages/ChatsPage";
@@ -194,6 +196,8 @@ function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/articles" element={<ArticlesPage />} />
+        <Route path="/articles/:id" element={<ArticleDetailPage />} />
         <Route path="/admin" element={<Admin />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />

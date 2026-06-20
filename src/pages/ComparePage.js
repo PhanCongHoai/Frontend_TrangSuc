@@ -231,42 +231,66 @@ function ComparePage() {
       </article>
     ));
 
+  const renderStars = (rating) => {
+    const fullStars = Math.round(rating);
+    return (
+      <span className="compare-stars">
+        {"★".repeat(fullStars)}
+        {"☆".repeat(5 - fullStars)}
+      </span>
+    );
+  };
+
+  const renderSlot = (item, slotIndex, placeholderText) => {
+    if (item) {
+      const isUnavailable = unavailableProductIds.includes(Number(item.productId));
+      return (
+        <article className={`compare-slot-card${isUnavailable ? " unavailable" : ""}`}>
+          <div className="compare-slot-img-wrapper">
+            <img
+              src={buildAssetUrl(item.image)}
+              alt={item.name}
+              loading="lazy"
+              decoding="async"
+              className="compare-slot-image"
+            />
+            <button
+              type="button"
+              className="compare-slot-close-btn"
+              onClick={() => removeCompareItem(item.productId)}
+              aria-label="Xóa sản phẩm"
+            >
+              &times;
+            </button>
+          </div>
+          <div className="compare-slot-info">
+            <strong className="compare-slot-name">{item.name}</strong>
+            <p className="compare-slot-price">{item.price || "Chưa có giá"}</p>
+            {isUnavailable ? (
+              <span className="compare-slot-status">Không còn khả dụng</span>
+            ) : null}
+          </div>
+        </article>
+      );
+    }
+
+    return (
+      <div className="compare-slot-card compare-slot-empty">
+        <Link to="/" className="compare-slot-dashed-trigger">
+          <span className="compare-slot-plus">+</span>
+          <span className="compare-slot-placeholder-text">{placeholderText}</span>
+        </Link>
+      </div>
+    );
+  };
+
   const renderSelectedItems = (title) => (
     <section className="compare-incomplete-card">
       <h2>{title}</h2>
       {error ? <p className="compare-selected-help">{COMPARE_UNAVAILABLE_MESSAGE}</p> : null}
-      <div className="compare-selected-grid">
-        {compareItems.map((item) => {
-          const isUnavailable = unavailableProductIds.includes(Number(item.productId));
-
-          return (
-            <article
-              key={item.productId}
-              className={`compare-selected-item${isUnavailable ? " unavailable" : ""}`}
-            >
-              <img
-                src={buildAssetUrl(item.image)}
-                alt={item.name}
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="compare-selected-item-copy">
-                <strong>{item.name}</strong>
-                <p>{item.price || "Chưa có giá"}</p>
-                {isUnavailable ? (
-                  <span className="compare-selected-status">Không còn khả dụng để so sánh</span>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                className="compare-remove-button"
-                onClick={() => removeCompareItem(item.productId)}
-              >
-                Bỏ
-              </button>
-            </article>
-          );
-        })}
+      <div className="compare-slots-container">
+        {renderSlot(compareItems[0], 0, "Chọn sản phẩm thứ nhất")}
+        {renderSlot(compareItems[1], 1, "Chọn sản phẩm thứ hai")}
       </div>
     </section>
   );
@@ -309,18 +333,21 @@ function ComparePage() {
             {!loading && !error && comparedProducts.length === compareConfig.requiredItems ? (
               <div className="compare-table">
                 <div className="compare-row compare-row-head">
-                  <div className="compare-cell label">Tiêu chí</div>
+                  <div className="compare-cell label">Sản phẩm</div>
                   {comparedProducts.map((product) => (
-                    <div className="compare-cell" key={product.id}>
-                      <img src={buildAssetUrl(product.image)} alt={product.name} />
+                    <div className="compare-cell compare-header-cell" key={product.id}>
+                      <div className="compare-image-container">
+                        <img src={buildAssetUrl(product.image)} alt={product.name} />
+                        <button
+                          type="button"
+                          className="compare-cell-close-btn"
+                          onClick={() => removeCompareItem(product.id)}
+                          aria-label="Xóa sản phẩm"
+                        >
+                          &times;
+                        </button>
+                      </div>
                       <h3>{product.name}</h3>
-                      <button
-                        type="button"
-                        className="compare-remove-button"
-                        onClick={() => removeCompareItem(product.id)}
-                      >
-                        Bỏ sản phẩm
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -390,11 +417,19 @@ function ComparePage() {
 
                     return (
                       <div className="compare-cell" key={`${product.id}-reviews`}>
-                        <p className="compare-review-summary">
-                          {review.total > 0
-                            ? `${review.averageRating}/5 (${review.total} đánh giá)`
-                            : "Chưa có đánh giá"}
-                        </p>
+                        <div className="compare-review-summary-box">
+                          {review.total > 0 ? (
+                            <>
+                              <div className="compare-rating-row">
+                                {renderStars(review.averageRating)}
+                                <strong className="compare-rating-score">{review.averageRating}/5</strong>
+                              </div>
+                              <span className="compare-rating-count">({review.total} đánh giá)</span>
+                            </>
+                          ) : (
+                            <span className="compare-no-reviews">Chưa có đánh giá</span>
+                          )}
+                        </div>
                         {review.items.length ? (
                           <div className="compare-review-list">
                             {renderReviewThread(review.items)}

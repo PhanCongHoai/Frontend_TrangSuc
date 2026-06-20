@@ -100,15 +100,15 @@ function ProductDetailPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState("");
+
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
   const [replyingToReviewId, setReplyingToReviewId] = useState(null);
   const [replyComment, setReplyComment] = useState("");
   const [replyError, setReplyError] = useState("");
   const [submittingReplyTo, setSubmittingReplyTo] = useState(null);
-  const [cartFeedback, setCartFeedback] = useState("");
-  const [cartError, setCartError] = useState("");
-  const [compareFeedback, setCompareFeedback] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+  const toastTimerRef = useRef(null);
   const [compareItems, setCompareItems] = useState(() => getCompareItems());
   const [compareMaxItems, setCompareMaxItems] = useState(() => getCompareConfig().maxItems);
   const [commentMenu, setCommentMenu] = useState({
@@ -119,6 +119,24 @@ function ProductDetailPage() {
   });
   const reviewTextareaRef = useRef(null);
   const reviewRefreshInFlightRef = useRef(false);
+
+  const showToast = useCallback((message, type = "info") => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToast({ show: true, message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast({ show: false, message: "", type: "info" });
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const currentUser = useMemo(() => getCurrentUser(), []);
 
@@ -468,17 +486,17 @@ function ProductDetailPage() {
 
   const getSelectedPurchaseItem = () => {
     if (!product) {
-      setCartError("Kh?ng th? x? l? s?n ph?m l?c n?y.");
+      showToast("Không thể xử lý sản phẩm lúc này.", "error");
       return null;
     }
 
     if (!selectedVariant) {
-      setCartError("Vui l?ng ch?n bi?n th? s?n ph?m tr??c khi ti?p t?c.");
+      showToast("Vui lòng chọn biến thể sản phẩm trước khi tiếp tục.", "error");
       return null;
     }
 
     if (Number(selectedVariant.quantity || 0) <= 0) {
-      setCartError("Bi?n th? n?y ?ang t?m h?t h?ng.");
+      showToast("Biến thể này đang tạm hết hàng.", "error");
       return null;
     }
 
@@ -487,8 +505,8 @@ function ProductDetailPage() {
       variantId: Number(selectedVariant.id),
       name: product.name,
       image: activeImage || product.images[0]?.url || "",
-      size: selectedVariant.size || "Chu?n",
-      stockLabel: `${Number(selectedVariant.quantity || 0)} s?n ph?m`,
+      size: selectedVariant.size || "Chuẩn",
+      stockLabel: `${Number(selectedVariant.quantity || 0)} sản phẩm`,
       price: selectedUnitPrice,
       basePrice: selectedBasePrice,
       baseSellPrice: Number(product.pricing?.baseSellPrice || 0),
@@ -508,9 +526,6 @@ function ProductDetailPage() {
   };
 
   const handleAddToCart = (shouldNavigateToCart = false) => {
-    setCartFeedback("");
-    setCartError("");
-
     if (!currentUser) {
       navigate("/login", {
         state: {
@@ -528,10 +543,11 @@ function ProductDetailPage() {
 
     const result = addCartItem(purchaseItem);
 
-    setCartFeedback(
+    showToast(
       result.reachedStockLimit
-        ? "S?n ph?m ?? ???c th?m t?i m?c t?n kho hi?n c?."
-        : "?? th?m s?n ph?m v?o gi? h?ng."
+        ? "Sản phẩm đã được thêm tới mức tồn kho hiện có."
+        : "Đã thêm sản phẩm vào giỏ hàng.",
+      "success"
     );
 
     if (shouldNavigateToCart) {
@@ -540,9 +556,6 @@ function ProductDetailPage() {
   };
 
   const handleBuyNow = () => {
-    setCartFeedback("");
-    setCartError("");
-
     if (!currentUser) {
       navigate("/login", {
         state: {
@@ -576,7 +589,7 @@ function ProductDetailPage() {
 
     if (isSelected) {
       removeCompareItem(productId);
-      setCompareFeedback("Đã bỏ sản phẩm khỏi danh sách so sánh.");
+      showToast("Đã bỏ sản phẩm khỏi danh sách so sánh.", "info");
       return;
     }
 
@@ -592,7 +605,7 @@ function ProductDetailPage() {
     const result = addCompareItem(nextCompareItem, compareMaxItems);
 
     if (result.status === "added") {
-      setCompareFeedback("Đã thêm sản phẩm vào danh sách so sánh.");
+      showToast("Đã thêm sản phẩm vào danh sách so sánh.", "success");
       return;
     }
 
@@ -606,7 +619,7 @@ function ProductDetailPage() {
       const replaceResult = replaceCompareItemAt(targetIndex, nextCompareItem, compareMaxItems);
 
       if (replaceResult.status === "replaced") {
-        setCompareFeedback("Đã thay sản phẩm trong danh sách so sánh.");
+        showToast("Đã thay sản phẩm trong danh sách so sánh.", "success");
         return;
       }
     }
@@ -1151,14 +1164,20 @@ function ProductDetailPage() {
                 </span>
               </button>
             </div>
-            {cartError ? <p className="product-cart-feedback error">{cartError}</p> : null}
-            {!cartError && cartFeedback ? (
-              <p className="product-cart-feedback">{cartFeedback}</p>
-            ) : null}
-            {compareFeedback ? <p className="product-cart-feedback">{compareFeedback}</p> : null}
           </div>
         </section>
       </main>
+
+      {toast.show ? (
+        <div className={`product-toast-box ${toast.type}`}>
+          <div className="product-toast-content">
+            <span className="toast-icon">
+              {toast.type === "success" ? "✓" : toast.type === "error" ? "⚠" : "ℹ"}
+            </span>
+            <span className="toast-message">{toast.message}</span>
+          </div>
+        </div>
+      ) : null}
 
       <Footer />
     </div>
@@ -1166,4 +1185,3 @@ function ProductDetailPage() {
 }
 
 export default ProductDetailPage;
-

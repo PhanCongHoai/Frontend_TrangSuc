@@ -4,6 +4,8 @@ import Header from "../Header";
 import Footer from "../footer/Footer";
 import FeaturedProductsSection from "./components/FeaturedProductsSection";
 import HeroSection from "./components/HeroSection";
+import StorySection from "./components/StorySection";
+import NewsSection from "./components/NewsSection";
 import {
   collections as defaultCollections,
 } from "./data/homeData";
@@ -200,6 +202,8 @@ function HomePage() {
           collections={collections}
           products={featuredProducts}
         />
+        <StorySection />
+        <NewsSection />
       </main>
 
       <Footer />

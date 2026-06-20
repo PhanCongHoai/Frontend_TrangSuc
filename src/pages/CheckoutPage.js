@@ -24,12 +24,31 @@ const PAYMENT_METHODS = [
     description: "Shop xử lý sau khi đã xác nhận thanh toán.",
   },
 ];
-const DELIVERY_OPTION = {
-  id: "ghn_standard",
-  label: "GHN giao hàng tiêu chuẩn",
-  description: "Phí ship lấy trực tiếp từ GHN nếu backend đã cấu hình.",
-  serviceTypeId: 2,
-};
+const SHIPPING_METHODS = [
+  {
+    id: "ghn",
+    label: "Giao Hàng Nhanh (GHN) 🚚",
+    description: "Vận chuyển nhanh qua GHN. Phí tính tự động theo địa chỉ.",
+    serviceTypeId: 2,
+    isGhn: true,
+  },
+  {
+    id: "ghtk",
+    label: "Giao Hàng Tiết Kiệm (GHTK) 📦",
+    description: "Vận chuyển tiết kiệm bưu cục GHTK. Phí cố định 20,000đ.",
+    serviceTypeId: null,
+    isGhn: false,
+    fixedFee: 20000,
+  },
+  {
+    id: "viettelpost",
+    label: "Viettel Post ✉️",
+    description: "Vận chuyển qua mạng lưới Viettel Post. Phí cố định 25,000đ.",
+    serviceTypeId: null,
+    isGhn: false,
+    fixedFee: 25000,
+  },
+];
 
 const getWeight = (item) => {
   const explicit = Number(item?.shippingWeight || 0);
@@ -204,6 +223,94 @@ function CheckoutPage() {
     wardCode: "",
     streetAddress: currentUser?.address || "",
   });
+  const [showParcelConfig, setShowParcelConfig] = useState(false);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState(SHIPPING_METHODS[0]);
+  const [availablePromotions, setAvailablePromotions] = useState([]);
+  const [showVoucherSelect, setShowVoucherSelect] = useState(false);
+  const [errors, setErrors] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    provinceCode: "",
+    districtCode: "",
+    wardCode: "",
+    streetAddress: "",
+  });
+
+  const [touched, setTouched] = useState({
+    fullName: false,
+    phone: false,
+    email: false,
+    provinceCode: false,
+    districtCode: false,
+    wardCode: false,
+    streetAddress: false,
+  });
+
+  const validateField = (name, value) => {
+    let errorMsg = "";
+
+    if (name === "fullName") {
+      if (!value || !value.trim()) {
+        errorMsg = "Vui lòng nhập họ và tên người nhận.";
+      }
+    }
+
+    if (name === "phone") {
+      const val = value || "";
+      if (!val.trim()) {
+        errorMsg = "Vui lòng nhập số điện thoại.";
+      } else {
+        const phoneRegex = /^0[0-9]{9}$/;
+        if (!phoneRegex.test(val.trim())) {
+          errorMsg = "Số điện thoại không hợp lệ. Phải bắt đầu bằng số 0 và có đúng 10 số.";
+        }
+      }
+    }
+
+    if (name === "email") {
+      const val = value || "";
+      if (val.trim()) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(val.trim())) {
+          errorMsg = "Email không đúng định dạng. Ví dụ: nguoidung@gmail.com";
+        }
+      }
+    }
+
+    if (name === "streetAddress") {
+      if (!value || !value.trim()) {
+        errorMsg = "Vui lòng nhập địa chỉ chi tiết (số nhà, tên đường...).";
+      }
+    }
+
+    if (name === "provinceCode") {
+      if (!value) {
+        errorMsg = "Vui lòng chọn tỉnh/thành phố.";
+      }
+    }
+
+    if (name === "districtCode") {
+      if (!value) {
+        errorMsg = "Vui lòng chọn quận/huyện.";
+      }
+    }
+
+    if (name === "wardCode") {
+      if (!value) {
+        errorMsg = "Vui lòng chọn phường/xã.";
+      }
+    }
+
+    setErrors((current) => ({ ...current, [name]: errorMsg }));
+    return errorMsg;
+  };
+
+  const handleBlur = (event) => {
+    const { name, value } = event.target;
+    setTouched((current) => ({ ...current, [name]: true }));
+    validateField(name, value);
+  };
 
   const checkoutItems = useMemo(() => {
     const stateItems = Array.isArray(location.state?.items)
@@ -218,8 +325,21 @@ function CheckoutPage() {
       0
     );
     const itemCount = checkoutItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-    const discount = voucherCode.trim().toUpperCase() === "TIKTOK10" ? Math.round(subtotal * 0.1) : 0;
-    const shippingFee = shippingConfig.enabled ? Math.max(0, Number(shippingQuote?.total || 0)) : 0;
+    const shippingFee = shippingQuote ? Math.max(0, Number(shippingQuote.total || 0)) : 0;
+
+    const activePromo = availablePromotions.find(
+      (promo) => promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase()
+    );
+    let discount = 0;
+    if (activePromo && subtotal >= Number(activePromo.min_order || 0)) {
+      if (activePromo.type === "percentage") {
+        discount = Math.round(subtotal * (Number(activePromo.discount_percent || 0) / 100));
+      } else if (activePromo.type === "fixed") {
+        discount = Number(activePromo.discount_amount || 0);
+      } else if (activePromo.type === "free_shipping") {
+        discount = shippingFee;
+      }
+    }
 
     return {
       subtotal,
@@ -228,7 +348,7 @@ function CheckoutPage() {
       shippingFee,
       total: Math.max(0, subtotal + shippingFee - discount),
     };
-  }, [checkoutItems, shippingConfig.enabled, shippingQuote, voucherCode]);
+  }, [checkoutItems, shippingQuote, voucherCode, availablePromotions]);
 
   const suggestedParcel = useMemo(() => {
     const weight = checkoutItems.reduce(
@@ -312,9 +432,33 @@ function CheckoutPage() {
   const fullAddress = [formData.streetAddress.trim(), administrativeAddress]
     .filter(Boolean)
     .join(", ");
-  const canEstimateShipping = Boolean(
-    shippingConfig.enabled && formData.districtCode && formData.wardCode
-  );
+  const canEstimateShipping = Boolean(formData.districtCode && formData.wardCode);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let ignore = false;
+    const loadPromotions = async () => {
+      try {
+        const payload = await fetchJson(
+          buildApiUrl("/api/promotions"),
+          {
+            headers: getAuthHeaders(),
+          },
+          "Không thể tải danh sách mã ưu đãi."
+        );
+        if (ignore) return;
+        if (payload?.success && Array.isArray(payload.data)) {
+          setAvailablePromotions(payload.data);
+        }
+      } catch (error) {
+        console.error("Error loading promotions:", error);
+      }
+    };
+    loadPromotions();
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser]);
   const isPrepaidOrder = placedOrder?.payment?.method === "prepaid";
   const isPaymentConfirmed =
     String(placedOrder?.payment?.status || "").trim().toUpperCase() === "PAID";
@@ -527,6 +671,12 @@ function CheckoutPage() {
   useEffect(() => {
     let ignore = false;
 
+    if (!selectedShippingMethod.isGhn) {
+      setShippingQuote({ total: selectedShippingMethod.fixedFee });
+      setShippingError("");
+      return undefined;
+    }
+
     if (!canEstimateShipping || parcelValidationMessage) {
       setShippingQuote(null);
       setShippingError("");
@@ -538,28 +688,34 @@ function CheckoutPage() {
         setShippingError("");
         setShippingLoading(true);
 
-        const payload = await fetchJson(
-          `${SHIPPING_API}/fee`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              service_type_id: DELIVERY_OPTION.serviceTypeId,
-              to_district_id: Number(formData.districtCode),
-              to_ward_code: formData.wardCode,
-              height: parcel.height,
-              length: parcel.length,
-              width: parcel.width,
-              weight: parcel.weight,
-              insurance_value: pricing.subtotal,
-              coupon: null,
-            }),
-          },
-          "Không thể tính phí GHN cho địa chỉ này."
-        );
+        if (shippingConfig.enabled) {
+          const payload = await fetchJson(
+            `${SHIPPING_API}/fee`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                service_type_id: selectedShippingMethod.serviceTypeId,
+                to_district_id: Number(formData.districtCode),
+                to_ward_code: formData.wardCode,
+                height: parcel.height,
+                length: parcel.length,
+                width: parcel.width,
+                weight: parcel.weight,
+                insurance_value: pricing.subtotal,
+                coupon: null,
+              }),
+            },
+            "Không thể tính phí GHN cho địa chỉ này."
+          );
 
-        if (!ignore) {
-          setShippingQuote(payload.data || null);
+          if (!ignore) {
+            setShippingQuote(payload.data || null);
+          }
+        } else {
+          if (!ignore) {
+            setShippingQuote({ total: 30000 });
+          }
         }
       } catch (error) {
         if (!ignore) {
@@ -588,6 +744,8 @@ function CheckoutPage() {
     pricing.subtotal,
     canEstimateShipping,
     parcelValidationMessage,
+    selectedShippingMethod,
+    shippingConfig.enabled,
   ]);
 
   useEffect(() => {
@@ -675,6 +833,18 @@ function CheckoutPage() {
 
       return { ...current, [name]: value };
     });
+
+    if (touched[name]) {
+      validateField(name, value);
+    }
+
+    if (name === "provinceCode") {
+      setErrors((prev) => ({ ...prev, provinceCode: "", districtCode: "", wardCode: "" }));
+      setTouched((prev) => ({ ...prev, districtCode: false, wardCode: false }));
+    } else if (name === "districtCode") {
+      setErrors((prev) => ({ ...prev, districtCode: "", wardCode: "" }));
+      setTouched((prev) => ({ ...prev, wardCode: false }));
+    }
   };
 
   const handleParcelChange = ({ target: { name, value } }) => {
@@ -691,13 +861,74 @@ function CheckoutPage() {
 
     if (isPlacingOrder) return;
 
-    if (!formData.fullName.trim() || !formData.phone.trim() || !formData.streetAddress.trim()) {
-      setAddressError("Vui lòng điền đầy đủ thông tin khách hàng và địa chỉ chi tiết.");
-      return;
-    }
+    // Run validation on all fields
+    const formFields = ["fullName", "phone", "email", "provinceCode", "districtCode", "wardCode", "streetAddress"];
+    let firstErrorField = null;
+    let hasError = false;
 
-    if (!formData.provinceCode || !formData.districtCode || !formData.wardCode) {
-      setAddressError("Vui lòng chọn đầy đủ tỉnh/thành, quận/huyện và phường/xã.");
+    const nextTouched = {};
+    const nextErrors = {};
+
+    formFields.forEach((field) => {
+      nextTouched[field] = true;
+      
+      let errorMsg = "";
+      const value = formData[field] || "";
+
+      if (field === "fullName") {
+        if (!value || !value.trim()) {
+          errorMsg = "Vui lòng nhập họ và tên người nhận.";
+        }
+      } else if (field === "phone") {
+        if (!value.trim()) {
+          errorMsg = "Vui lòng nhập số điện thoại.";
+        } else {
+          const phoneRegex = /^0[0-9]{9}$/;
+          if (!phoneRegex.test(value.trim())) {
+            errorMsg = "Số điện thoại không hợp lệ. Phải bắt đầu bằng số 0 và có đúng 10 số.";
+          }
+        }
+      } else if (field === "email") {
+        if (value.trim()) {
+          const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+          if (!emailRegex.test(value.trim())) {
+            errorMsg = "Email không đúng định dạng. Ví dụ: nguoidung@gmail.com";
+          }
+        }
+      } else if (field === "streetAddress") {
+        if (!value || !value.trim()) {
+          errorMsg = "Vui lòng nhập địa chỉ chi tiết (số nhà, tên đường...).";
+        }
+      } else if (field === "provinceCode") {
+        if (!value) {
+          errorMsg = "Vui lòng chọn tỉnh/thành phố.";
+        }
+      } else if (field === "districtCode") {
+        if (!value) {
+          errorMsg = "Vui lòng chọn quận/huyện.";
+        }
+      } else if (field === "wardCode") {
+        if (!value) {
+          errorMsg = "Vui lòng chọn phường/xã.";
+        }
+      }
+
+      nextErrors[field] = errorMsg;
+      if (errorMsg && !hasError) {
+        hasError = true;
+        firstErrorField = field;
+      }
+    });
+
+    setTouched(nextTouched);
+    setErrors(nextErrors);
+
+    if (hasError) {
+      const element = document.getElementsByName(firstErrorField)[0];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
       return;
     }
 
@@ -710,9 +941,14 @@ function CheckoutPage() {
 
     try {
       setIsPlacingOrder(true);
-      if (shippingConfig.enabled && !shippingQuote) {
-        throw new Error("Chưa tính được phí GHN.");
+      if (selectedShippingMethod.isGhn && !shippingQuote) {
+        throw new Error("Chưa tính được phí vận chuyển của GHN.");
       }
+
+      const activePromo = availablePromotions.find(
+        (promo) => promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase()
+      );
+      const isPromoEligible = activePromo && pricing.subtotal >= Number(activePromo.min_order || 0);
 
       const payload = await fetchJson(
         ORDERS_API,
@@ -730,6 +966,8 @@ function CheckoutPage() {
             discount_amount: pricing.discount,
             shipping_fee: pricing.shippingFee,
             total_amount: pricing.total,
+            promotion_id: isPromoEligible ? activePromo.id : null,
+            promotion_code: isPromoEligible ? activePromo.code : null,
             payment_method: selectedPayment,
             payment_type_id: selectedPayment === "cod" ? 2 : 1,
             note: orderNote.trim(),
@@ -750,7 +988,8 @@ function CheckoutPage() {
             height: parcel.height,
             insurance_value: pricing.subtotal,
             cod_amount: selectedPayment === "cod" ? pricing.total : 0,
-            service_type_id: DELIVERY_OPTION.serviceTypeId,
+            service_type_id: selectedShippingMethod.serviceTypeId,
+            shipping_method: selectedShippingMethod.id,
             items: checkoutItems.map((item) => ({
               productId: item.productId,
               variantId: item.variantId,
@@ -773,6 +1012,12 @@ function CheckoutPage() {
 
       if ((location.state?.source || "cart") === "cart") {
         clearCart();
+      }
+
+      if (isPromoEligible) {
+        setAvailablePromotions((current) =>
+          current.filter((promo) => promo.id !== activePromo.id)
+        );
       }
 
       setPlacedOrder(buildPlacedOrderState(payload));
@@ -992,64 +1237,79 @@ function CheckoutPage() {
       <main className="checkout-shell">
         <form className="checkout-layout" onSubmit={handlePlaceOrder}>
           <div className="checkout-main-column">
+            {/* Step 1: Thông tin khách hàng */}
             <section className="checkout-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">1. Thông tin khách hàng</p>
+                  <p className="checkout-card-kicker">1. Thông tin khách hàng 👤</p>
                   <h2>Người nhận đơn</h2>
                 </div>
               </div>
 
               <div className="checkout-form-grid">
-                <label>
+                <label className={errors.fullName && touched.fullName ? "checkout-field-error" : ""}>
                   <span>Họ và tên</span>
                   <input
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="Nguyễn Văn A"
                     required
                   />
+                  {errors.fullName && touched.fullName && (
+                    <span className="checkout-input-error-msg">{errors.fullName}</span>
+                  )}
                 </label>
 
-                <label>
+                <label className={errors.phone && touched.phone ? "checkout-field-error" : ""}>
                   <span>Số điện thoại</span>
                   <input
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="09xxxxxxxx"
                     required
                   />
+                  {errors.phone && touched.phone && (
+                    <span className="checkout-input-error-msg">{errors.phone}</span>
+                  )}
                 </label>
 
-                <label className="checkout-form-span-2">
+                <label className={`checkout-form-span-2 ${errors.email && touched.email ? "checkout-field-error" : ""}`}>
                   <span>Email</span>
                   <input
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="ban@example.com"
                   />
+                  {errors.email && touched.email && (
+                    <span className="checkout-input-error-msg">{errors.email}</span>
+                  )}
                 </label>
               </div>
             </section>
 
+            {/* Step 2: Địa chỉ giao hàng */}
             <section className="checkout-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">2. Địa chỉ giao hàng</p>
+                  <p className="checkout-card-kicker">2. Địa chỉ giao hàng 📍</p>
                   <h2>Thông tin giao đến</h2>
                 </div>
               </div>
 
               <div className="checkout-form-grid">
-                <label>
+                <label className={errors.provinceCode && touched.provinceCode ? "checkout-field-error" : ""}>
                   <span>Tỉnh/Thành phố</span>
                   <select
                     name="provinceCode"
                     value={formData.provinceCode}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     disabled={addressLoading.provinces}
                     required
                   >
@@ -1062,14 +1322,18 @@ function CheckoutPage() {
                       </option>
                     ))}
                   </select>
+                  {errors.provinceCode && touched.provinceCode && (
+                    <span className="checkout-input-error-msg">{errors.provinceCode}</span>
+                  )}
                 </label>
 
-                <label>
+                <label className={errors.districtCode && touched.districtCode ? "checkout-field-error" : ""}>
                   <span>Quận/Huyện</span>
                   <select
                     name="districtCode"
                     value={formData.districtCode}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     disabled={!formData.provinceCode || addressLoading.districts}
                     required
                   >
@@ -1082,14 +1346,18 @@ function CheckoutPage() {
                       </option>
                     ))}
                   </select>
+                  {errors.districtCode && touched.districtCode && (
+                    <span className="checkout-input-error-msg">{errors.districtCode}</span>
+                  )}
                 </label>
 
-                <label>
+                <label className={errors.wardCode && touched.wardCode ? "checkout-field-error" : ""}>
                   <span>Phường/Xã</span>
                   <select
                     name="wardCode"
                     value={formData.wardCode}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     disabled={!formData.districtCode || addressLoading.wards}
                     required
                   >
@@ -1102,20 +1370,28 @@ function CheckoutPage() {
                       </option>
                     ))}
                   </select>
+                  {errors.wardCode && touched.wardCode && (
+                    <span className="checkout-input-error-msg">{errors.wardCode}</span>
+                  )}
                 </label>
 
-                <label className="checkout-form-span-2">
+                <label className={`checkout-form-span-2 ${errors.streetAddress && touched.streetAddress ? "checkout-field-error" : ""}`}>
                   <span>Địa chỉ chi tiết</span>
                   <input
                     name="streetAddress"
                     value={formData.streetAddress}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="Số nhà, tên đường, chung cư, tòa nhà..."
                     required
                   />
-                  <small className="checkout-form-help">
-                    Ô này dùng để lưu địa chỉ giao thực tế cho tài xế và cho đơn GHN.
-                  </small>
+                  {errors.streetAddress && touched.streetAddress ? (
+                    <span className="checkout-input-error-msg">{errors.streetAddress}</span>
+                  ) : (
+                    <small className="checkout-form-help">
+                      Ô này dùng để lưu địa chỉ giao thực tế cho tài xế và cho đơn GHN.
+                    </small>
+                  )}
                 </label>
               </div>
 
@@ -1136,185 +1412,51 @@ function CheckoutPage() {
               {addressError ? <p className="checkout-address-error">{addressError}</p> : null}
             </section>
 
+            {/* Step 3: Phương thức giao hàng */}
             <section className="checkout-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">3. Sản phẩm</p>
-                  <h2>Danh sách đang thanh toán</h2>
+                  <p className="checkout-card-kicker">3. Phương thức vận chuyển 🚚</p>
+                  <h2>Chọn nhà vận chuyển</h2>
                 </div>
               </div>
-
-              <div className="checkout-item-list">
-                {checkoutItems.map((item) => (
-                  <article className="checkout-item" key={`${item.variantId}-${item.productId}`}>
-                    <img
-                      src={buildAssetUrl(item.image)}
-                      alt={item.name}
-                      className="checkout-item-image"
-                    />
-                    <div className="checkout-item-body">
-                      <h3>{item.name}</h3>
-                      <div className="checkout-item-meta">
-                        <span>Phân loại: {item.size || "Chuẩn"}</span>
-                        <span>Số lượng: {item.quantity}</span>
-                        <span>Ship: {item.shippingWeight} g</span>
-                        {item.stockLabel ? <span>{item.stockLabel}</span> : null}
-                      </div>
-                    </div>
-                    <strong>
-                      {formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}
-                    </strong>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="checkout-card">
-              <div className="checkout-card-head">
-                <div>
-                  <p className="checkout-card-kicker">4. Thông tin gói hàng</p>
-                  <h2>Dữ liệu tính cước</h2>
-                </div>
-              </div>
-
-              <div className="checkout-form-grid checkout-parcel-grid">
-                <label>
-                  <span>Khối lượng (gram)</span>
-                  <input
-                    type="number"
-                    name="weight"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={parcelInput.weight}
-                    onChange={handleParcelChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Dài (cm)</span>
-                  <input
-                    type="number"
-                    name="length"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={parcelInput.length}
-                    onChange={handleParcelChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Rộng (cm)</span>
-                  <input
-                    type="number"
-                    name="width"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={parcelInput.width}
-                    onChange={handleParcelChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Cao (cm)</span>
-                  <input
-                    type="number"
-                    name="height"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={parcelInput.height}
-                    onChange={handleParcelChange}
-                    required
-                  />
-                </label>
-              </div>
-
-              <div className="checkout-info-list">
-                <div className="checkout-info-row">
-                  <span>Khối lượng GHN đang dùng</span>
-                  <strong>{parcel.weight ? `${parcel.weight} g` : "--"}</strong>
-                </div>
-                <div className="checkout-info-row">
-                  <span>Kích thước GHN đang dùng</span>
-                  <strong>
-                    {parcel.length && parcel.width && parcel.height
-                      ? `${parcel.length} x ${parcel.width} x ${parcel.height} cm`
-                      : "--"}
-                  </strong>
-                </div>
-                <div className="checkout-info-row">
-                  <span>Tổng số món</span>
-                  <strong>{pricing.itemCount} sản phẩm</strong>
-                </div>
-              </div>
-
-              {parcelValidationMessage ? (
-                <p className="checkout-address-error">{parcelValidationMessage}</p>
-              ) : null}
-
-            </section>
-
-            <section className="checkout-card">
-              <div className="checkout-card-head">
-                <div>
-                  <p className="checkout-card-kicker">5. Giao hàng</p>
-                  <h2>Kết nối GHN</h2>
-                </div>
-              </div>
-
-              {!shippingConfig.loading && !shippingConfig.enabled ? (
-                <div className="checkout-address-preview">
-                  <strong>Backend chưa cấu hình GHN</strong>
-                  <p>Cần điền các biến còn thiếu trong `backend/.env` để bật GHN thật.</p>
-                  {shippingConfig.missingFields.length ? (
-                    <p>Còn thiếu: {shippingConfig.missingFields.join(", ")}</p>
-                  ) : null}
-                </div>
-              ) : null}
 
               {shippingConfig.error ? (
                 <p className="checkout-address-error">{shippingConfig.error}</p>
               ) : null}
 
-              <label className="checkout-option active">
-                <input type="radio" checked readOnly />
-                <div>
-                  <strong>{DELIVERY_OPTION.label}</strong>
-                  <span>{DELIVERY_OPTION.description}</span>
-                  <span>
-                    {shippingConfig.enabled
-                      ? `Môi trường: ${shippingConfig.useSandbox ? "Sandbox" : "Production"}`
-                      : "Đang tạo đơn nội bộ."}
-                  </span>
-                  <span>
-                    {canEstimateShipping
-                      ? "Đã có đủ quận/huyện và phường/xã để gọi phí GHN."
-                      : "Chọn đủ quận/huyện và phường/xã để lấy phí GHN."}
-                  </span>
-                </div>
-                <em>{shippingLoading ? "Đang tính..." : formatCurrency(pricing.shippingFee)}</em>
-              </label>
+              <div className="checkout-form-grid">
+                <label className="checkout-form-span-2">
+                  <span>Phương thức giao hàng</span>
+                  <select
+                    value={selectedShippingMethod.id}
+                    onChange={(e) => {
+                      const method = SHIPPING_METHODS.find((m) => m.id === e.target.value);
+                      setSelectedShippingMethod(method);
+                    }}
+                  >
+                    {SHIPPING_METHODS.map((method) => (
+                      <option key={method.id} value={method.id}>
+                        {method.label} (
+                        {method.isGhn
+                          ? (shippingLoading ? "Đang tính..." : formatCurrency(pricing.shippingFee))
+                          : formatCurrency(method.fixedFee)}
+                        )
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-              {administrativeAddress ? (
-                <div className="checkout-address-preview">
-                  <strong>Khu vực đang gửi sang GHN để tính phí</strong>
-                  <p>{administrativeAddress}</p>
-                </div>
-              ) : null}
 
               {shippingError ? <p className="checkout-address-error">{shippingError}</p> : null}
             </section>
 
+            {/* Step 4: Phương thức thanh toán */}
             <section className="checkout-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">6. Thanh toán</p>
+                  <p className="checkout-card-kicker">4. Thanh toán 💳</p>
                   <h2>Phương thức thanh toán</h2>
                 </div>
               </div>
@@ -1341,23 +1483,65 @@ function CheckoutPage() {
               </div>
             </section>
 
+            {/* Step 5: Ghi chú */}
             <section className="checkout-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">7. Ghi chú</p>
+                  <p className="checkout-card-kicker">5. Ghi chú & Ưu đãi 📝</p>
                   <h2>Thông tin bổ sung</h2>
                 </div>
               </div>
 
               <div className="checkout-form-grid">
-                <label>
+                <div className="checkout-form-span-2 checkout-voucher-container">
                   <span>Mã ưu đãi</span>
-                  <input
-                    value={voucherCode}
-                    onChange={(event) => setVoucherCode(event.target.value)}
-                    placeholder="Ví dụ: TIKTOK10"
-                  />
-                </label>
+                  <div className="checkout-voucher-input-wrapper">
+                    <input
+                      value={voucherCode}
+                      onChange={(event) => setVoucherCode(event.target.value)}
+                      placeholder="Ví dụ: TIKTOK10"
+                      className="checkout-voucher-input"
+                    />
+                    <div className="checkout-voucher-select-wrapper">
+                      <button
+                        type="button"
+                        className="checkout-voucher-select-btn"
+                        onClick={() => setShowVoucherSelect(!showVoucherSelect)}
+                      >
+                        🎫 Chọn mã ưu đãi đang có
+                      </button>
+                      {showVoucherSelect && (
+                        <div className="checkout-voucher-dropdown-list">
+                          {availablePromotions.length === 0 ? (
+                            <div className="checkout-voucher-item disabled">Không có mã ưu đãi nào</div>
+                          ) : (
+                            availablePromotions.map((promo) => {
+                              const isEligible = pricing.subtotal >= Number(promo.min_order || 0);
+                              return (
+                                <div
+                                  key={promo.id}
+                                  className={`checkout-voucher-item ${isEligible ? "" : "disabled"}`}
+                                  onClick={() => {
+                                    if (isEligible) {
+                                      setVoucherCode(promo.code);
+                                      setShowVoucherSelect(false);
+                                    }
+                                  }}
+                                >
+                                  <strong>{promo.code}</strong>
+                                  <p>{promo.name}</p>
+                                  {!isEligible && (
+                                    <small>(Đơn từ {formatCurrency(promo.min_order)})</small>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 <label className="checkout-form-span-2">
                   <span>Ghi chú cho shop</span>
@@ -1370,14 +1554,143 @@ function CheckoutPage() {
                 </label>
               </div>
             </section>
+
+            {/* Advanced: Kích thước gói hàng (Collapsible) */}
+            <section className="checkout-card checkout-advanced-parcel-card">
+              <button
+                type="button"
+                className="checkout-advanced-toggle-btn"
+                onClick={() => setShowParcelConfig(!showParcelConfig)}
+              >
+                <span>⚙️ Cấu hình kích thước gói hàng (Nâng cao)</span>
+                <span>{showParcelConfig ? "Thu gọn ▲" : "Mở rộng ▼"}</span>
+              </button>
+
+              {showParcelConfig && (
+                <div className="checkout-advanced-panel-content">
+                  <div className="checkout-form-grid checkout-parcel-grid">
+                    <label>
+                      <span>Khối lượng (gram)</span>
+                      <input
+                        type="number"
+                        name="weight"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={parcelInput.weight}
+                        onChange={handleParcelChange}
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>Dài (cm)</span>
+                      <input
+                        type="number"
+                        name="length"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={parcelInput.length}
+                        onChange={handleParcelChange}
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>Rộng (cm)</span>
+                      <input
+                        type="number"
+                        name="width"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={parcelInput.width}
+                        onChange={handleParcelChange}
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>Cao (cm)</span>
+                      <input
+                        type="number"
+                        name="height"
+                        min="1"
+                        step="1"
+                        inputMode="numeric"
+                        value={parcelInput.height}
+                        onChange={handleParcelChange}
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  <div className="checkout-info-list">
+                    <div className="checkout-info-row">
+                      <span>Khối lượng GHN đang dùng</span>
+                      <strong>{parcel.weight ? `${parcel.weight} g` : "--"}</strong>
+                    </div>
+                    <div className="checkout-info-row">
+                      <span>Kích thước GHN đang dùng</span>
+                      <strong>
+                        {parcel.length && parcel.width && parcel.height
+                          ? `${parcel.length} x ${parcel.width} x ${parcel.height} cm`
+                          : "--"}
+                      </strong>
+                    </div>
+                    <div className="checkout-info-row">
+                      <span>Tổng số món</span>
+                      <strong>{pricing.itemCount} sản phẩm</strong>
+                    </div>
+                  </div>
+
+                  {parcelValidationMessage ? (
+                    <p className="checkout-address-error">{parcelValidationMessage}</p>
+                  ) : null}
+                </div>
+              )}
+            </section>
           </div>
 
           <aside className="checkout-summary-column">
+            {/* Products summary inside right column */}
+            <section className="checkout-card checkout-products-summary-card">
+              <div className="checkout-card-head">
+                <div>
+                  <p className="checkout-card-kicker">Sản phẩm 💎</p>
+                  <h2>Danh sách sản phẩm</h2>
+                </div>
+              </div>
+
+              <div className="checkout-item-list">
+                {checkoutItems.map((item) => (
+                  <article className="checkout-item" key={`${item.variantId}-${item.productId}`}>
+                    <img
+                      src={buildAssetUrl(item.image)}
+                      alt={item.name}
+                      className="checkout-item-image"
+                    />
+                    <div className="checkout-item-body">
+                      <h3>{item.name}</h3>
+                      <div className="checkout-item-meta">
+                        <span>Size: {item.size || "Chuẩn"}</span>
+                        <span>SL: {item.quantity}</span>
+                      </div>
+                    </div>
+                    <strong>
+                      {formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}
+                    </strong>
+                  </article>
+                ))}
+              </div>
+            </section>
+
             <section className="checkout-card checkout-summary-card">
               <div className="checkout-card-head">
                 <div>
-                  <p className="checkout-card-kicker">Tổng kết</p>
-                  <h2>Đơn hàng của bạn</h2>
+                  <p className="checkout-card-kicker">Tổng kết đơn hàng 🧾</p>
+                  <h2>Thanh toán</h2>
                 </div>
               </div>
 
@@ -1400,18 +1713,7 @@ function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="checkout-summary-note">
-                <strong>
-                  {selectedPayment === "cod"
-                    ? "Thanh toán khi nhận hàng"
-                    : "Thanh toán trước"}
-                </strong>
-                <p>
-                  {shippingConfig.enabled
-                    ? "Nếu GHN đã đủ thông tin shop, hệ thống sẽ tạo đơn GHN ngay lúc đặt hàng."
-                    : "Nút đặt hàng hiện tại tạo đơn nội bộ do backend chưa có GHN credentials."}
-                </p>
-              </div>
+
 
               <button type="submit" className="checkout-primary-button" disabled={isPlacingOrder}>
                 {isPlacingOrder ? "Đang tạo đơn..." : "Đặt hàng ngay"}

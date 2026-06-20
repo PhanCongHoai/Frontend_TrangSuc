@@ -183,6 +183,7 @@ function OrdersPage() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("ALL");
   const [authExpired, setAuthExpired] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -330,12 +331,24 @@ function OrdersPage() {
   }, [orders]);
 
   const filteredOrders = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    if (!keyword) {
-      return orders;
+    let result = orders;
+    if (activeTab !== "ALL") {
+      result = orders.filter((order) => {
+        const resolved = normalizeOrderStatus(order.status);
+        if (activeTab === "PENDING" && resolved.tone === "warning") return true;
+        if (activeTab === "SHIPPING" && resolved.tone === "info") return true;
+        if (activeTab === "DELIVERED" && resolved.tone === "success") return true;
+        if (activeTab === "CANCELLED" && resolved.tone === "danger") return true;
+        return false;
+      });
     }
 
-    return orders.filter((order) => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) {
+      return result;
+    }
+
+    return result.filter((order) => {
       const normalizedStatus = normalizeOrderStatus(order.status);
       const normalizedPaymentLabel = normalizePaymentLabel(
         order.paymentLabel || order.paymentMethod
@@ -371,7 +384,7 @@ function OrdersPage() {
 
       return fields.includes(keyword);
     });
-  }, [orders, query]);
+  }, [orders, query, activeTab]);
 
   useEffect(() => {
     if (!expandedOrderId) {
@@ -468,6 +481,46 @@ function OrdersPage() {
           </section>
         ) : null}
 
+        {status === "success" && orders.length ? (
+          <div className="orders-tabs">
+            <button
+              type="button"
+              className={`orders-tab-btn ${activeTab === "ALL" ? "active" : ""}`}
+              onClick={() => { setActiveTab("ALL"); setExpandedOrderId(null); }}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              className={`orders-tab-btn ${activeTab === "PENDING" ? "active" : ""}`}
+              onClick={() => { setActiveTab("PENDING"); setExpandedOrderId(null); }}
+            >
+              Đang xử lý
+            </button>
+            <button
+              type="button"
+              className={`orders-tab-btn ${activeTab === "SHIPPING" ? "active" : ""}`}
+              onClick={() => { setActiveTab("SHIPPING"); setExpandedOrderId(null); }}
+            >
+              Đang giao
+            </button>
+            <button
+              type="button"
+              className={`orders-tab-btn ${activeTab === "DELIVERED" ? "active" : ""}`}
+              onClick={() => { setActiveTab("DELIVERED"); setExpandedOrderId(null); }}
+            >
+              Đã giao
+            </button>
+            <button
+              type="button"
+              className={`orders-tab-btn ${activeTab === "CANCELLED" ? "active" : ""}`}
+              onClick={() => { setActiveTab("CANCELLED"); setExpandedOrderId(null); }}
+            >
+              Đã hủy
+            </button>
+          </div>
+        ) : null}
+
         {status === "loading" ? (
           <section className="orders-empty-state">
             <h2>Đang tải đơn hàng</h2>
@@ -505,182 +558,123 @@ function OrdersPage() {
         ) : null}
 
         {status === "success" && filteredOrders.length ? (
-          <section className="orders-list">
-            {filteredOrders.map((order, index) => {
-              const resolvedStatus = normalizeOrderStatus(order.status);
-              const resolvedPaymentLabel = normalizePaymentLabel(
-                order.paymentLabel || order.paymentMethod
-              );
-              const resolvedPaymentStatus = normalizePaymentStatus(order.paymentStatus);
-              const resolvedShippingStatus = normalizeShippingStatus(order.shippingStatus);
-              const items = Array.isArray(order.items) ? order.items : [];
-              const previewItems = items.slice(0, 2);
-              const remainingItemsCount = Math.max(0, items.length - previewItems.length);
-              const isExpanded = expandedOrderId === order.id;
+          <section className="orders-table-wrapper">
+            <div className="orders-table-header">
+              <div className="orders-th">Mã đơn & Ngày đặt</div>
+              <div className="orders-th">Sản phẩm</div>
+              <div className="orders-th">Tổng thanh toán</div>
+              <div className="orders-th">Trạng thái</div>
+              <div className="orders-th">Hành động</div>
+            </div>
+            <div className="orders-table-body">
+              {filteredOrders.map((order, index) => {
+                const resolvedStatus = normalizeOrderStatus(order.status);
+                const resolvedPaymentLabel = normalizePaymentLabel(
+                  order.paymentLabel || order.paymentMethod
+                );
+                const resolvedPaymentStatus = normalizePaymentStatus(order.paymentStatus);
+                const resolvedShippingStatus = normalizeShippingStatus(order.shippingStatus);
+                const items = Array.isArray(order.items) ? order.items : [];
+                const firstItem = items[0] || {};
+                const remainingCount = items.length - 1;
+                const isExpanded = expandedOrderId === order.id;
 
-              return (
-                <article className="orders-card" key={order.id}>
-                  <div className="orders-card-preview">
-                    <div className="orders-card-head">
-                      <div className="orders-card-heading">
-                        <span className={`orders-status status-${resolvedStatus.tone}`}>{resolvedStatus.label}</span>
-                        <h2>{order.title || `Đơn hàng #${index + 1}`}</h2>
-                        <p>{formatDateTime(order.createdAt)}</p>
+                return (
+                  <div 
+                    className={`orders-row-item ${isExpanded ? "expanded" : ""}`} 
+                    key={order.id}
+                  >
+                    <div 
+                      className="orders-row-summary"
+                      onClick={() => setExpandedOrderId(currentId => currentId === order.id ? null : order.id)}
+                    >
+                      <div className="orders-td orders-td-code">
+                        <strong className="order-code-text">{order.orderCode || `#DH-${order.id}`}</strong>
+                        <span className="order-date-text">{formatDateTime(order.createdAt)}</span>
                       </div>
-                      <div className="orders-card-total">
-                        <span>Tổng thanh toán</span>
-                        <strong>{formatCurrency(order.total || 0)}</strong>
-                      </div>
-                    </div>
-
-                    <div className="orders-preview-grid">
-                      <div className="orders-preview-meta">
-                        <span>Mã vận đơn</span>
-                        <strong>{order.orderCode || "Chưa có"}</strong>
-                      </div>
-                      <div className="orders-preview-meta">
-                        <span>Người nhận</span>
-                        <strong>{order.recipientName || "Chưa có"}</strong>
-                      </div>
-                      <div className="orders-preview-meta">
-                        <span>Thanh toán</span>
-                        <strong>{resolvedPaymentLabel}</strong>
-                      </div>
-                      <div className="orders-preview-meta">
-                        <span>Trạng thái đơn hàng</span>
-                        <strong>{resolvedStatus.label}</strong>
-                      </div>
-                      <div className="orders-preview-meta">
-                        <span>Số sản phẩm</span>
-                        <strong>{items.length}</strong>
-                      </div>
-                    </div>
-
-                    <div className="orders-preview-items">
-                      <strong>Sản phẩm trong đơn</strong>
-                      <ul>
-                        {previewItems.map((item) => (
-                          <li key={`${order.id}-${item.variantId || item.productId || item.name}`}>
-                            <div className="orders-preview-product">
-                              <img
-                                src={buildAssetUrl(item.image || FALLBACK_PRODUCT_IMAGE)}
-                                alt={item.name}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <span>{item.name}</span>
+                      <div className="orders-td orders-td-product">
+                        {firstItem.name ? (
+                          <div className="orders-row-product-preview">
+                            <img
+                              src={buildAssetUrl(firstItem.image || FALLBACK_PRODUCT_IMAGE)}
+                              alt={firstItem.name}
+                              className="order-row-product-img"
+                              loading="lazy"
+                            />
+                            <div className="order-row-product-info">
+                              <span className="order-row-product-name">{firstItem.name}</span>
+                              {remainingCount > 0 && (
+                                <span className="order-row-product-more">và {remainingCount} sản phẩm khác</span>
+                              )}
                             </div>
-                            <div className="orders-preview-product-meta">
-                              <small>{`x${item.quantity}`}</small>
-                              <small>{formatCurrency(item.unitPrice || 0)}</small>
-                            </div>
-                          </li>
-                        ))}
-                        {remainingItemsCount > 0 ? (
-                          <li className="orders-preview-more">
-                            <span>{`+ ${remainingItemsCount} sản phẩm khác`}</span>
-                          </li>
-                        ) : null}
-                      </ul>
-                    </div>
-
-                    <div className="orders-summary-row">
-                      <span>Tạm tính: {formatCurrency(order.subtotal || 0)}</span>
-                      <span>Phí ship: {formatCurrency(order.shippingFee || 0)}</span>
-                      <span>Giảm giá: {formatCurrency(order.discount || 0)}</span>
-                    </div>
-
-                    <div className="orders-card-actions">
-                      <button
-                        type="button"
-                        className="orders-primary-button orders-toggle-button"
-                        onClick={() =>
-                          setExpandedOrderId((currentId) => (currentId === order.id ? null : order.id))
-                        }
-                      >
-                        {isExpanded ? "Ẩn chi tiết đơn hàng" : "Xem chi tiết đơn hàng"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {isExpanded ? (
-                    <div className="orders-details-panel">
-                      <div className="orders-meta-grid">
-                        <div>
-                          <span>Mã vận đơn</span>
-                          <strong>{order.orderCode || "Chưa có"}</strong>
-                        </div>
-                        <div>
-                          <span>Phương thức thanh toán</span>
-                          <strong>{resolvedPaymentLabel}</strong>
-                        </div>
-                        <div>
-                          <span>Người nhận</span>
-                          <strong>{order.recipientName || "Chưa có"}</strong>
-                        </div>
-                        <div>
-                          <span>Số điện thoại</span>
-                          <strong>{order.recipientPhone || "Chưa có"}</strong>
-                        </div>
-                        <div>
-                          <span>Email</span>
-                          <strong>{order.recipientEmail || "Chưa có"}</strong>
-                        </div>
-                        <div>
-                          <span>Trạng thái thanh toán</span>
-                          <strong>{resolvedPaymentStatus}</strong>
-                        </div>
-                        <div>
-                          <span>Trạng thái vận chuyển</span>
-                          <strong>{resolvedShippingStatus}</strong>
-                        </div>
-                        <div>
-                          <span>Ngày đặt</span>
-                          <strong>{formatDateTime(order.createdAt)}</strong>
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="order-no-items">Không có sản phẩm</span>
+                        )}
                       </div>
+                      <div className="orders-td orders-td-price">
+                        <strong className="order-price-text">{formatCurrency(order.total || 0)}</strong>
+                      </div>
+                      <div className="orders-td orders-td-status">
+                        <span className={`orders-status-badge status-${resolvedStatus.tone}`}>
+                          {resolvedStatus.label}
+                        </span>
+                      </div>
+                      <div className="orders-td orders-td-action">
+                        <button type="button" className="order-expand-toggle-btn">
+                          {isExpanded ? "Thu gọn ▲" : "Chi tiết ▼"}
+                        </button>
+                      </div>
+                    </div>
 
-                      <div className="orders-bottom-grid">
-                        <div className="orders-side-stack">
-                          <div className="orders-address-box">
-                            <strong>Địa chỉ giao hàng</strong>
-                            <div className="orders-detail-list">
+                    {isExpanded && (
+                      <div className="orders-row-details">
+                        <div className="orders-details-grid">
+                          {/* Column 1: Recipient Info */}
+                          <div className="orders-detail-card">
+                            <h3>📍 Thông tin nhận hàng</h3>
+                            <div className="orders-detail-info-list">
                               <p>
-                                <span>Địa chỉ chi tiết</span>
-                                <strong>{order.streetAddress || "Chưa có"}</strong>
-                              </p>
-                              <p>
-                                <span>Phường/Xã</span>
-                                <strong>{order.wardName || "Chưa có"}</strong>
+                                <span>Người nhận:</span>
+                                <strong>{order.recipientName || "Chưa có"}</strong>
                               </p>
                               <p>
-                                <span>Quận/Huyện</span>
-                                <strong>{order.districtName || "Chưa có"}</strong>
+                                <span>Số điện thoại:</span>
+                                <strong>{order.recipientPhone || "Chưa có"}</strong>
                               </p>
                               <p>
-                                <span>Tỉnh/Thành phố</span>
-                                <strong>{order.provinceName || "Chưa có"}</strong>
+                                <span>Email:</span>
+                                <strong>{order.recipientEmail || "Chưa có"}</strong>
                               </p>
-                              <p className="orders-detail-full">
-                                <span>Đầy đủ</span>
-                                <strong>{order.address || "Chưa có địa chỉ"}</strong>
+                              <p className="orders-detail-full-width">
+                                <span>Địa chỉ giao hàng:</span>
+                                <strong>{order.address || "Chưa có"}</strong>
                               </p>
-                              <p className="orders-detail-full">
-                                <span>Ghi chú</span>
+                              <p className="orders-detail-full-width">
+                                <span>Ghi chú:</span>
                                 <strong>{order.note || "Không có ghi chú"}</strong>
                               </p>
                             </div>
                           </div>
 
-                          <div className="orders-address-box">
-                            <strong>Thông số kiện hàng</strong>
-                            <div className="orders-detail-list">
+                          {/* Column 2: Shipping Info */}
+                          <div className="orders-detail-card">
+                            <h3>🚚 Thông tin vận chuyển</h3>
+                            <div className="orders-detail-info-list">
                               <p>
-                                <span>Khối lượng</span>
-                                <strong>{formatParcelWeight(order.parcelWeight)}</strong>
+                                <span>Trạng thái:</span>
+                                <strong>{resolvedShippingStatus}</strong>
                               </p>
                               <p>
-                                <span>Kích thước</span>
+                                <span>Mã vận đơn:</span>
+                                <strong>{order.orderCode || "Chưa có"}</strong>
+                              </p>
+                              <p>
+                                <span>Khối lượng:</span>
+                                <strong>{formatParcelWeight(order.parcelWeight)}</strong>
+                              </p>
+                              <p className="orders-detail-full-width">
+                                <span>Kích thước (D x R x C):</span>
                                 <strong>
                                   {formatParcelDimensions(
                                     order.parcelLength,
@@ -689,68 +683,85 @@ function OrdersPage() {
                                   )}
                                 </strong>
                               </p>
+                            </div>
+                          </div>
+
+                          {/* Column 3: Payment Info */}
+                          <div className="orders-detail-card">
+                            <h3>💳 Thông tin thanh toán</h3>
+                            <div className="orders-detail-info-list">
                               <p>
-                                <span>Dài</span>
-                                <strong>{order.parcelLength > 0 ? `${order.parcelLength} cm` : "Chưa có"}</strong>
+                                <span>Phương thức:</span>
+                                <strong>{resolvedPaymentLabel}</strong>
                               </p>
                               <p>
-                                <span>Rộng</span>
-                                <strong>{order.parcelWidth > 0 ? `${order.parcelWidth} cm` : "Chưa có"}</strong>
+                                <span>Trạng thái:</span>
+                                <strong>{resolvedPaymentStatus}</strong>
                               </p>
-                              <p>
-                                <span>Cao</span>
-                                <strong>{order.parcelHeight > 0 ? `${order.parcelHeight} cm` : "Chưa có"}</strong>
-                              </p>
-                              <p>
-                                <span>Số sản phẩm trong đơn</span>
-                                <strong>{items.length}</strong>
+                              <p className="orders-detail-full-width">
+                                <span>Ngày thanh toán:</span>
+                                <strong>{formatDateTime(order.createdAt)}</strong>
                               </p>
                             </div>
                           </div>
                         </div>
 
-                        <div className="orders-items-box">
-                          <strong>Danh sách sản phẩm</strong>
-                          <ul>
+                        {/* Order Items Table */}
+                        <div className="orders-details-products-box">
+                          <h3>Danh sách sản phẩm trong đơn</h3>
+                          <div className="orders-details-products-list">
                             {items.map((item) => (
-                              <li key={`${order.id}-${item.variantId || item.productId || item.name}`}>
-                                <span>
-                                  {item.name}
-                                  <small>Biến thể #{item.variantId || "N/A"}</small>
-                                </span>
-                                <span>
-                                  x{item.quantity}
-                                  <small>{formatCurrency(item.unitPrice || 0)}</small>
-                                </span>
-                              </li>
+                              <div 
+                                className="orders-details-product-row" 
+                                key={`${order.id}-${item.variantId || item.productId || item.name}`}
+                              >
+                                <div className="orders-details-product-main">
+                                  <img
+                                    src={buildAssetUrl(item.image || FALLBACK_PRODUCT_IMAGE)}
+                                    alt={item.name}
+                                    className="orders-details-product-img"
+                                    loading="lazy"
+                                  />
+                                  <div className="orders-details-product-title-box">
+                                    <strong className="orders-details-product-name">{item.name}</strong>
+                                    <small className="orders-details-product-variant">Mã biến thể: #{item.variantId || "N/A"}</small>
+                                  </div>
+                                </div>
+                                <div className="orders-details-product-quantity-price">
+                                  <span>{formatCurrency(item.unitPrice || 0)}</span>
+                                  <span>x{item.quantity}</span>
+                                  <strong>{formatCurrency((item.unitPrice || 0) * item.quantity)}</strong>
+                                </div>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="orders-cost-box">
-                        <div>
-                          <span>Tạm tính</span>
-                          <strong>{formatCurrency(order.subtotal || 0)}</strong>
-                        </div>
-                        <div>
-                          <span>Phí vận chuyển</span>
-                          <strong>{formatCurrency(order.shippingFee || 0)}</strong>
-                        </div>
-                        <div>
-                          <span>Giảm giá</span>
-                          <strong>- {formatCurrency(order.discount || 0)}</strong>
-                        </div>
-                        <div>
-                          <span>Tổng thanh toán</span>
-                          <strong>{formatCurrency(order.total || 0)}</strong>
+                        {/* Cost breakdown */}
+                        <div className="orders-details-cost-breakdown">
+                          <div className="orders-cost-line">
+                            <span>Tạm tính:</span>
+                            <span>{formatCurrency(order.subtotal || 0)}</span>
+                          </div>
+                          <div className="orders-cost-line">
+                            <span>Phí vận chuyển:</span>
+                            <span>{formatCurrency(order.shippingFee || 0)}</span>
+                          </div>
+                          <div className="orders-cost-line">
+                            <span>Giảm giá:</span>
+                            <span>- {formatCurrency(order.discount || 0)}</span>
+                          </div>
+                          <div className="orders-cost-line total">
+                            <span>Tổng thanh toán:</span>
+                            <strong>{formatCurrency(order.total || 0)}</strong>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
         ) : null}
       </main>
