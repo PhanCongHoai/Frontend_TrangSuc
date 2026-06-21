@@ -117,8 +117,18 @@ function ReturnRequestsPage() {
     const target = rejectModal.data;
     if (!target) return;
     
+    const reasonToSend = String(rejectModal.reason || "").trim();
+    if (!reasonToSend) {
+      setAlertModal({
+        show: true,
+        type: "error",
+        title: "Thiếu lý do từ chối",
+        message: "Vui lòng nhập lý do từ chối trước khi xác nhận.",
+      });
+      return;
+    }
+    
     const { id } = target;
-    const reasonToSend = rejectModal.reason;
     setRejectModal({ show: false, data: null, reason: "" });
     setActionLoadingId(id);
 
@@ -456,7 +466,13 @@ function ReturnRequestsPage() {
                 type="button"
                 className="admin-modal-btn confirm"
                 onClick={handleRejectRefund}
-                style={{ background: "#ff5b5b" }}
+                style={{
+                  background: (rejectModal.reason || "").trim() ? "#ff5b5b" : "rgba(255, 255, 255, 0.15)",
+                  color: (rejectModal.reason || "").trim() ? "#ffffff" : "#888888",
+                  cursor: (rejectModal.reason || "").trim() ? "pointer" : "not-allowed",
+                  border: (rejectModal.reason || "").trim() ? "none" : "1px solid rgba(255, 255, 255, 0.1)"
+                }}
+                disabled={!(rejectModal.reason || "").trim()}
               >
                 Xác nhận từ chối
               </button>
