@@ -18,10 +18,16 @@ function OrdersPage() {
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
+  const [alertModal, setAlertModal] = useState({ show: false, type: "success", title: "", message: "" });
 
   const handleStartDateChange = (val) => {
     if (val && endDate && new Date(val) > new Date(endDate)) {
-      alert("Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.");
+      setAlertModal({
+        show: true,
+        type: "error",
+        title: "Lỗi bộ lọc thời gian",
+        message: "Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.",
+      });
       return;
     }
     setStartDate(val);
@@ -29,7 +35,12 @@ function OrdersPage() {
 
   const handleEndDateChange = (val) => {
     if (val && startDate && new Date(startDate) > new Date(val)) {
-      alert("Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.");
+      setAlertModal({
+        show: true,
+        type: "error",
+        title: "Lỗi bộ lọc thời gian",
+        message: "Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.",
+      });
       return;
     }
     setEndDate(val);
@@ -254,6 +265,34 @@ function OrdersPage() {
           onUpdateOrderStatus={handleUpdateOrderStatus}
         />
       ) : null}
+
+      {/* Alert / Notification Modal */}
+      {alertModal.show && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <div className={`admin-modal-icon ${alertModal.type}`}>
+                {alertModal.type === "success" ? "✅" : alertModal.type === "error" ? "❌" : "⚠️"}
+              </div>
+              <h3 style={{ color: alertModal.type === "success" ? "#55d6be" : alertModal.type === "error" ? "#ff5b5b" : "#f4c84b" }}>
+                {alertModal.title}
+              </h3>
+            </div>
+            <div className="admin-modal-body">
+              <p>{alertModal.message}</p>
+            </div>
+            <div className="admin-modal-footer">
+              <button
+                type="button"
+                className="admin-modal-btn confirm"
+                onClick={() => setAlertModal({ show: false, type: "success", title: "", message: "" })}
+              >
+                Đồng ý
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

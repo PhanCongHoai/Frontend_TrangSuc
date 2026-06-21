@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const ORDER_STATUS_OPTIONS = [
   { value: "PENDING", label: "Chờ xác nhận" },
   { value: "PROCESSING", label: "Đang xử lý" },
@@ -28,6 +30,7 @@ function OrdersSection({
   onRefresh,
   onUpdateOrderStatus,
 }) {
+  const [cancelConfirm, setCancelConfirm] = useState({ show: false, orderId: null, orderCode: "" });
   const visiblePageNumbers = [];
   const pageWindowStart = Math.max(1, currentPage - 2);
   const pageWindowEnd = Math.min(totalPages, currentPage + 2);
@@ -194,9 +197,11 @@ function OrdersSection({
                         className="orders-cancel-button"
                         disabled={updatingOrderId === order.id}
                         onClick={() => {
-                          if (window.confirm(`Xác nhận hủy đơn hàng ${order.code}?`)) {
-                            onUpdateOrderStatus(order.id, "CANCELLED");
-                          }
+                          setCancelConfirm({
+                            show: true,
+                            orderId: order.id,
+                            orderCode: order.code,
+                          });
                         }}
                       >
                         {updatingOrderId === order.id ? "Đang xử lý..." : "Hủy đơn"}
@@ -261,6 +266,50 @@ function OrdersSection({
         Đang hiển thị {orders.length}/{filteredOrdersCount} đơn hàng phù hợp. Tổng tất cả:{" "}
         {totalOrders}.
       </p>
+
+      {/* Custom Confirm Cancel Modal */}
+      {cancelConfirm.show && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <div className="admin-modal-icon error">⚠️</div>
+              <h3 style={{ color: "#ff5b5b" }}>Xác nhận hủy đơn</h3>
+            </div>
+            <div className="admin-modal-body">
+              <p>
+                Bạn có chắc chắn muốn hủy đơn hàng <strong>{cancelConfirm.orderCode}</strong> không?
+              </p>
+            </div>
+            <div className="admin-modal-footer">
+              <button
+                type="button"
+                className="admin-modal-btn cancel"
+                onClick={() =>
+                  setCancelConfirm({ show: false, orderId: null, orderCode: "" })
+                }
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                className="admin-modal-btn confirm"
+                style={{
+                  background: "linear-gradient(135deg, #ff6b6b, #e53e3e)",
+                  color: "#ffffff",
+                  border: "none",
+                  boxShadow: "0 4px 12px rgba(255, 107, 107, 0.2)",
+                }}
+                onClick={() => {
+                  onUpdateOrderStatus(cancelConfirm.orderId, "CANCELLED");
+                  setCancelConfirm({ show: false, orderId: null, orderCode: "" });
+                }}
+              >
+                Xác nhận hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
