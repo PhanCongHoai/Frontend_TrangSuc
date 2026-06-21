@@ -379,16 +379,32 @@ function FeaturedProductsSection({ collections, products }) {
         )}
       </div>
 
-      {hasMoreProducts ? (
-        <div className="product-load-more">
-          <button
-            type="button"
-            onClick={() =>
-              setVisibleProductCount((currentCount) => currentCount + PRODUCT_PAGE_SIZE)
-            }
-          >
-            {LOAD_MORE_TEXT}
-          </button>
+      {(hasMoreProducts || visibleProductCount > PRODUCT_PAGE_SIZE) ? (
+        <div className="product-load-more" style={{ display: "flex", gap: "14px", justifyContent: "center" }}>
+          {hasMoreProducts && (
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleProductCount((currentCount) => currentCount + PRODUCT_PAGE_SIZE)
+              }
+            >
+              {LOAD_MORE_TEXT}
+            </button>
+          )}
+          {visibleProductCount > PRODUCT_PAGE_SIZE && (
+            <button
+              type="button"
+              className="product-collapse-button"
+              onClick={() => {
+                setVisibleProductCount(PRODUCT_PAGE_SIZE);
+                // Scroll back to the top of featured products section smoothly
+                const element = document.getElementById("featured-products");
+                element?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              Thu gọn
+            </button>
+          )}
         </div>
       ) : null}
     </section>

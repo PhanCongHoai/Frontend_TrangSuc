@@ -721,3 +721,184 @@
     box-sizing: border-box;
   }
 }
+
+/* Actions bar & buttons */
+.orders-details-actions-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 16px;
+}
+
+.orders-action-btn {
+  min-height: 40px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orders-action-btn.btn-cancel {
+  background: rgba(255, 84, 84, 0.1);
+  color: #ff9e9e;
+  border-color: rgba(255, 84, 84, 0.25);
+}
+
+.orders-action-btn.btn-cancel:hover {
+  background: rgba(255, 84, 84, 0.2);
+  border-color: #ff9e9e;
+}
+
+.orders-action-btn.btn-reorder {
+  background: linear-gradient(135deg, #f4c84b, #dfad2e);
+  color: #171717;
+}
+
+.orders-action-btn.btn-reorder:hover {
+  background: linear-gradient(135deg, #ffd86b, #f0bc3f);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .orders-details-actions-bar {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+  .orders-action-btn {
+    width: 100%;
+  }
+}
+
+/* Custom Modal Overlay & Box */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.custom-modal-box {
+  width: 90%;
+  max-width: 440px;
+  background: linear-gradient(170deg, rgba(30, 30, 30, 0.98), rgba(15, 15, 15, 0.98));
+  border: 1px solid rgba(244, 200, 75, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  padding: 24px;
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #f5f5f5;
+}
+
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.custom-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f4c84b;
+  letter-spacing: 0.5px;
+}
+
+.custom-modal-close-btn {
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.custom-modal-close-btn:hover {
+  color: #ffffff;
+}
+
+.custom-modal-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 24px;
+}
+
+.custom-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.custom-modal-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.custom-modal-btn.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.custom-modal-btn.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.custom-modal-btn.btn-danger {
+  background: rgba(255, 84, 84, 0.12);
+  color: #ff9e9e;
+  border-color: rgba(255, 84, 84, 0.3);
+}
+
+.custom-modal-btn.btn-danger:hover {
+  background: #ff5454;
+  color: #ffffff;
+  border-color: #ff5454;
+}
+
+.custom-modal-btn.btn-primary {
+  background: linear-gradient(135deg, #f4c84b, #dfad2e);
+  color: #171717;
+}
+
+.custom-modal-btn.btn-primary:hover {
+  background: linear-gradient(135deg, #ffd86b, #f0bc3f);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

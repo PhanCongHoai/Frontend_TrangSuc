@@ -460,6 +460,19 @@
   box-shadow: 0 12px 22px rgba(244, 200, 75, 0.18);
 }
 
+.product-load-more button.product-collapse-button {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(244, 200, 75, 0.45);
+  color: #f4c84b;
+}
+
+.product-load-more button.product-collapse-button:hover {
+  background: rgba(244, 200, 75, 0.12);
+  border-color: #ffd86b;
+  color: #ffd86b;
+  box-shadow: 0 8px 18px rgba(244, 200, 75, 0.08);
+}
+
 .compare-replace-panel {
   margin-top: 14px;
   padding: 12px;

@@ -24,6 +24,7 @@ function Footer() {
           <a href="/contact">Liên hệ</a>
           <a href="/about">Giới thiệu</a>
           <a href="/login">Đăng nhập</a>
+          <a href="/return-policy">Chính sách hoàn trả</a>
         </section>
 
         <section className="footer-col">

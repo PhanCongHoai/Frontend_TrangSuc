@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./footer/Footer";
@@ -187,7 +187,7 @@ async function fetchJson(url, options, fallbackMessage = "Không thể tải d�
 function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentUser = getCurrentUser();
+  const [currentUser] = useState(() => getCurrentUser());
   const [selectedPayment, setSelectedPayment] = useState(PAYMENT_METHODS[0].id);
   const [voucherCode, setVoucherCode] = useState("");
   const [orderNote, setOrderNote] = useState("");
@@ -226,6 +226,7 @@ function CheckoutPage() {
   const [showParcelConfig, setShowParcelConfig] = useState(false);
   const [selectedShippingMethod, setSelectedShippingMethod] = useState(SHIPPING_METHODS[0]);
   const [availablePromotions, setAvailablePromotions] = useState([]);
+  const [acceptingPromoId, setAcceptingPromoId] = useState(null);
   const [showVoucherSelect, setShowVoucherSelect] = useState(false);
   const [errors, setErrors] = useState({
     fullName: "",
@@ -313,6 +314,9 @@ function CheckoutPage() {
   };
 
   const checkoutItems = useMemo(() => {
+    if (location.state?.reorderData?.items) {
+      return location.state.reorderData.items.map(normalizeItem);
+    }
     const stateItems = Array.isArray(location.state?.items)
       ? location.state.items.map(normalizeItem)
       : [];
@@ -328,7 +332,9 @@ function CheckoutPage() {
     const shippingFee = shippingQuote ? Math.max(0, Number(shippingQuote.total || 0)) : 0;
 
     const activePromo = availablePromotions.find(
-      (promo) => promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase()
+      (promo) =>
+        promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase() &&
+        (promo.is_accepted === true || Number(promo.is_accepted) === 1)
     );
     let discount = 0;
     if (activePromo && subtotal >= Number(activePromo.min_order || 0)) {
@@ -434,31 +440,55 @@ function CheckoutPage() {
     .join(", ");
   const canEstimateShipping = Boolean(formData.districtCode && formData.wardCode);
 
-  useEffect(() => {
+  const loadPromotions = useCallback(async () => {
     if (!currentUser) return;
-    let ignore = false;
-    const loadPromotions = async () => {
-      try {
-        const payload = await fetchJson(
-          buildApiUrl("/api/promotions"),
-          {
-            headers: getAuthHeaders(),
-          },
-          "Không thể tải danh sách mã ưu đãi."
-        );
-        if (ignore) return;
-        if (payload?.success && Array.isArray(payload.data)) {
-          setAvailablePromotions(payload.data);
-        }
-      } catch (error) {
-        console.error("Error loading promotions:", error);
+    try {
+      const payload = await fetchJson(
+        buildApiUrl("/api/promotions"),
+        {
+          headers: getAuthHeaders(),
+        },
+        "Không thể tải danh sách mã ưu đãi."
+      );
+      if (payload?.success && Array.isArray(payload.data)) {
+        setAvailablePromotions(payload.data);
       }
-    };
-    loadPromotions();
-    return () => {
-      ignore = true;
-    };
+    } catch (error) {
+      console.error("Error loading promotions:", error);
+    }
   }, [currentUser]);
+
+  const handleAcceptPromotion = async (promoId, promoCode, event) => {
+    event?.stopPropagation();
+    if (acceptingPromoId) return;
+    setAcceptingPromoId(promoId);
+    try {
+      const payload = await fetchJson(
+        buildApiUrl("/api/promotions/accept"),
+        {
+          method: "POST",
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ promotionId: promoId }),
+        },
+        "Không thể nhận mã khuyến mãi này."
+      );
+      if (payload?.success) {
+        await loadPromotions();
+      }
+    } catch (error) {
+      console.error("Lỗi khi nhận mã khuyến mãi:", error);
+      setAddressError(error.message || "Không thể nhận mã khuyến mãi.");
+    } finally {
+      setAcceptingPromoId(null);
+    }
+  };
+
+  useEffect(() => {
+    loadPromotions();
+  }, [loadPromotions]);
   const isPrepaidOrder = placedOrder?.payment?.method === "prepaid";
   const isPaymentConfirmed =
     String(placedOrder?.payment?.status || "").trim().toUpperCase() === "PAID";
@@ -748,6 +778,62 @@ function CheckoutPage() {
     shippingConfig.enabled,
   ]);
 
+  // Tự động điền thông tin người nhận khi mua lại đơn hàng cũ
+  useEffect(() => {
+    const reorderData = location.state?.reorderData;
+    if (reorderData?.recipient) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: reorderData.recipient.fullName || prev.fullName,
+        phone: reorderData.recipient.phone || prev.phone,
+        email: reorderData.recipient.email || prev.email,
+        streetAddress: reorderData.recipient.streetAddress || prev.streetAddress,
+      }));
+      if (reorderData.recipient.note) {
+        setOrderNote(reorderData.recipient.note);
+      }
+    }
+  }, [location.state]);
+
+  // So khớp Tỉnh/Thành phố từ đơn cũ khi danh sách tỉnh được tải lên
+  useEffect(() => {
+    const reorderData = location.state?.reorderData;
+    if (reorderData?.recipient?.provinceName && addressOptions.provinces.length > 0 && !formData.provinceCode) {
+      const match = addressOptions.provinces.find(
+        (p) => p.name.trim().toLowerCase() === reorderData.recipient.provinceName.trim().toLowerCase()
+      );
+      if (match) {
+        setFormData((prev) => ({ ...prev, provinceCode: match.code }));
+      }
+    }
+  }, [addressOptions.provinces, location.state, formData.provinceCode]);
+
+  // So khớp Quận/Huyện từ đơn cũ khi danh sách huyện được tải lên
+  useEffect(() => {
+    const reorderData = location.state?.reorderData;
+    if (reorderData?.recipient?.districtName && addressOptions.districts.length > 0 && formData.provinceCode && !formData.districtCode) {
+      const match = addressOptions.districts.find(
+        (d) => d.name.trim().toLowerCase() === reorderData.recipient.districtName.trim().toLowerCase()
+      );
+      if (match) {
+        setFormData((prev) => ({ ...prev, districtCode: match.code }));
+      }
+    }
+  }, [addressOptions.districts, location.state, formData.provinceCode, formData.districtCode]);
+
+  // So khớp Phường/Xã từ đơn cũ khi danh sách phường được tải lên
+  useEffect(() => {
+    const reorderData = location.state?.reorderData;
+    if (reorderData?.recipient?.wardName && addressOptions.wards.length > 0 && formData.districtCode && !formData.wardCode) {
+      const match = addressOptions.wards.find(
+        (w) => w.name.trim().toLowerCase() === reorderData.recipient.wardName.trim().toLowerCase()
+      );
+      if (match) {
+        setFormData((prev) => ({ ...prev, wardCode: match.code }));
+      }
+    }
+  }, [addressOptions.wards, location.state, formData.districtCode, formData.wardCode]);
+
   useEffect(() => {
     if (!placedOrder?.orderId || !isPrepaidOrder || isPaymentConfirmed) {
       return undefined;
@@ -946,9 +1032,24 @@ function CheckoutPage() {
       }
 
       const activePromo = availablePromotions.find(
-        (promo) => promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase()
+        (promo) =>
+          promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase() &&
+          (promo.is_accepted === true || Number(promo.is_accepted) === 1)
       );
       const isPromoEligible = activePromo && pricing.subtotal >= Number(activePromo.min_order || 0);
+
+      // Xác định xem mã giảm giá Free Ship có đang hoạt động hay không
+      const isFreeShippingActive = isPromoEligible && activePromo.type === "free_shipping";
+
+      // Nếu là đơn hàng COD và KHÔNG được Free Ship, khách tự trả tiền ship cho shipper (payment_type_id = 2)
+      // Ngược lại, shop sẽ trả tiền ship cho GHN (Prepaid hoặc đã được Free Ship) (payment_type_id = 1)
+      const paymentTypeId = (selectedPayment === "cod" && !isFreeShippingActive) ? 2 : 1;
+
+      // Nếu khách tự trả tiền ship trực tiếp cho shipper (payment_type_id === 2), 
+      // số tiền thu hộ COD (cod_amount) gửi sang GHN sẽ KHÔNG bao gồm phí ship.
+      const codAmount = selectedPayment === "cod"
+        ? (paymentTypeId === 2 ? Math.max(0, pricing.total - pricing.shippingFee) : pricing.total)
+        : 0;
 
       const payload = await fetchJson(
         ORDERS_API,
@@ -969,7 +1070,7 @@ function CheckoutPage() {
             promotion_id: isPromoEligible ? activePromo.id : null,
             promotion_code: isPromoEligible ? activePromo.code : null,
             payment_method: selectedPayment,
-            payment_type_id: selectedPayment === "cod" ? 2 : 1,
+            payment_type_id: paymentTypeId,
             note: orderNote.trim(),
             required_note: "KHONGCHOXEMHANG",
             email: formData.email.trim(),
@@ -987,7 +1088,7 @@ function CheckoutPage() {
             width: parcel.width,
             height: parcel.height,
             insurance_value: pricing.subtotal,
-            cod_amount: selectedPayment === "cod" ? pricing.total : 0,
+            cod_amount: codAmount,
             service_type_id: selectedShippingMethod.serviceTypeId,
             shipping_method: selectedShippingMethod.id,
             items: checkoutItems.map((item) => ({
@@ -1516,23 +1617,54 @@ function CheckoutPage() {
                             <div className="checkout-voucher-item disabled">Không có mã ưu đãi nào</div>
                           ) : (
                             availablePromotions.map((promo) => {
+                              const isAccepted = promo.is_accepted === true || Number(promo.is_accepted) === 1;
                               const isEligible = pricing.subtotal >= Number(promo.min_order || 0);
                               return (
                                 <div
                                   key={promo.id}
-                                  className={`checkout-voucher-item ${isEligible ? "" : "disabled"}`}
-                                  onClick={() => {
-                                    if (isEligible) {
+                                  className={`checkout-voucher-item ${
+                                    isAccepted
+                                      ? isEligible
+                                        ? "accepted-eligible"
+                                        : "accepted-ineligible disabled"
+                                      : "pending-activation"
+                                  }`}
+                                  onClick={(e) => {
+                                    if (!isAccepted) {
+                                      handleAcceptPromotion(promo.id, promo.code, e);
+                                    } else if (isEligible) {
                                       setVoucherCode(promo.code);
                                       setShowVoucherSelect(false);
                                     }
                                   }}
                                 >
-                                  <strong>{promo.code}</strong>
-                                  <p>{promo.name}</p>
-                                  {!isEligible && (
-                                    <small>(Đơn từ {formatCurrency(promo.min_order)})</small>
-                                  )}
+                                  <div className="voucher-item-left">
+                                    <strong className={isAccepted ? "" : "pending"}>
+                                      {promo.code} {!isAccepted && " (Chưa nhận)"}
+                                    </strong>
+                                    <p>{promo.name}</p>
+                                    {!isEligible && (
+                                      <small className="voucher-min-order-label">(Đơn từ {formatCurrency(promo.min_order)})</small>
+                                    )}
+                                  </div>
+                                  <div className="voucher-item-right">
+                                    {isAccepted ? (
+                                      isEligible ? (
+                                        <span className="voucher-status-badge accepted">Áp dụng</span>
+                                      ) : (
+                                        <span className="voucher-status-badge locked">Chưa đủ ĐK</span>
+                                      )
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className="voucher-accept-inline-btn"
+                                        disabled={acceptingPromoId === promo.id}
+                                        onClick={(e) => handleAcceptPromotion(promo.id, promo.code, e)}
+                                      >
+                                        {acceptingPromoId === promo.id ? "Đang nhận..." : "Nhận phiếu 🎁"}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })
@@ -1541,6 +1673,42 @@ function CheckoutPage() {
                       )}
                     </div>
                   </div>
+                  {/* Inline notice for typed/selected promo status */}
+                  {(() => {
+                    const typedPromo = availablePromotions.find(
+                      (promo) => promo.code.trim().toUpperCase() === voucherCode.trim().toUpperCase()
+                    );
+                    if (!typedPromo) return null;
+                    const isAccepted = typedPromo.is_accepted === true || Number(typedPromo.is_accepted) === 1;
+                    if (!isAccepted) {
+                      return (
+                        <div className="voucher-inline-notice warning">
+                          <span>⚠️ Mã <strong>{typedPromo.code}</strong> chưa được kích hoạt cho tài khoản của bạn.</span>
+                          <button
+                            type="button"
+                            className="voucher-inline-accept-btn"
+                            disabled={acceptingPromoId === typedPromo.id}
+                            onClick={(e) => handleAcceptPromotion(typedPromo.id, typedPromo.code, e)}
+                          >
+                            {acceptingPromoId === typedPromo.id ? "Đang kích hoạt..." : "Kích hoạt mã 🎁"}
+                          </button>
+                        </div>
+                      );
+                    }
+                    const isEligible = pricing.subtotal >= Number(typedPromo.min_order || 0);
+                    if (!isEligible) {
+                      return (
+                        <div className="voucher-inline-notice error">
+                          <span>❌ Chưa đủ điều kiện: Đơn hàng tối thiểu phải từ <strong>{formatCurrency(typedPromo.min_order)}</strong> (Hiện tại: {formatCurrency(pricing.subtotal)}).</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="voucher-inline-notice success">
+                        <span>✅ Đã áp dụng mã <strong>{typedPromo.code}</strong> thành công!</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <label className="checkout-form-span-2">

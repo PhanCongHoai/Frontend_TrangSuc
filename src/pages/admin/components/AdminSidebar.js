@@ -71,6 +71,12 @@ function AdminSidebar() {
         <NavLink to="/admin/orders" className="admin-nav-link">
           Đơn hàng
         </NavLink>
+        <NavLink to="/admin/return-requests" className="admin-nav-link">
+          Đơn hoàn trả
+        </NavLink>
+        <NavLink to="/admin/shipper-simulator" className="admin-nav-link">
+          Giả lập Shipper
+        </NavLink>
         <NavLink to="/admin/reports" className="admin-nav-link">
           Báo cáo doanh thu
         </NavLink>
@@ -88,6 +94,9 @@ function AdminSidebar() {
         </NavLink>
         <NavLink to="/admin/customers" className="admin-nav-link">
           Khách hàng
+        </NavLink>
+        <NavLink to="/admin/promotions" className="admin-nav-link">
+          Khuyến mãi
         </NavLink>
         <NavLink to="/admin/chats" className="admin-nav-link">
           <span>Tin nhắn</span>

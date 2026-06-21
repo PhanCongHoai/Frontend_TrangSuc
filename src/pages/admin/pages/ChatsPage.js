@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getAuthHeaders } from "../../../utils/auth";
+import { getAuthHeaders, getAccessToken } from "../../../utils/auth";
 import { buildApiUrl } from "../../../utils/api";
 
 const API_BASE_URL = buildApiUrl("/api/chat/admin");
@@ -29,6 +29,30 @@ const getAvatarLabel = (name) => {
   }
 
   return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
+};
+
+const getAvatarStyle = (name) => {
+  const normalizedName = String(name || "").trim();
+  if (!normalizedName) {
+    return {
+      background: "linear-gradient(135deg, rgba(244, 200, 75, 0.28), rgba(244, 200, 75, 0.12))",
+      border: "1px solid rgba(244, 200, 75, 0.18)",
+      color: "#f4c84b"
+    };
+  }
+
+  let hash = 0;
+  for (let i = 0; i < normalizedName.length; i++) {
+    hash = normalizedName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const hue = Math.abs(hash % 360);
+  return {
+    background: `linear-gradient(135deg, hsl(${hue}, 60%, 22%), hsl(${hue}, 40%, 11%))`,
+    border: `1px solid rgba(244, 200, 75, 0.15)`,
+    borderColor: `hsl(${hue}, 50%, 28%)`,
+    color: `hsl(${hue}, 95%, 72%)`
+  };
 };
 
 function readChatImageAsDataUrl(file) {
@@ -64,8 +88,16 @@ function ChatsPage() {
   });
   const imageInputRef = useRef(null);
 
+  const selectedConversationIdRef = useRef(selectedConversationId);
+  const triggerMessageReloadRef = useRef(null);
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
+
   useEffect(() => {
     let isMounted = true;
+    let eventSource = null;
 
     const loadConversations = async (keepSelection = true) => {
       try {
@@ -107,11 +139,70 @@ function ChatsPage() {
     };
 
     loadConversations(false);
-    const intervalId = setInterval(() => loadConversations(true), 2500);
+
+    const token = getAccessToken();
+    if (token) {
+      const streamUrl = `${API_BASE_URL}/conversations/stream?access_token=${encodeURIComponent(token)}`;
+      
+      const connectStream = () => {
+        if (!isMounted) return;
+        
+        eventSource = new EventSource(streamUrl);
+        
+        eventSource.addEventListener("conversation", (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload && payload.conversation) {
+              const updatedConv = payload.conversation;
+              
+              setConversations((current) => {
+                const index = current.findIndex((c) => c.id === updatedConv.id);
+                if (index !== -1) {
+                  const copy = [...current];
+                  copy[index] = {
+                    ...copy[index],
+                    ...updatedConv,
+                    unreadCount: payload.readConversationId === updatedConv.id ? 0 : updatedConv.unreadCount
+                  };
+                  return copy;
+                } else {
+                  return [updatedConv, ...current];
+                }
+              });
+              
+              if (updatedConv.id === selectedConversationIdRef.current) {
+                triggerMessageReloadRef.current?.();
+              }
+            }
+          } catch (err) {
+            console.error("Lỗi xử lý SSE:", err);
+          }
+        });
+        
+        eventSource.onerror = () => {
+          if (eventSource) {
+            eventSource.close();
+          }
+          if (isMounted) {
+            setTimeout(connectStream, 5000);
+          }
+        };
+      };
+      
+      connectStream();
+    } else {
+      const intervalId = setInterval(() => loadConversations(true), 2500);
+      return () => {
+        isMounted = false;
+        clearInterval(intervalId);
+      };
+    }
 
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, []);
 
@@ -174,12 +265,14 @@ function ChatsPage() {
       }
     };
 
+    triggerMessageReloadRef.current = loadMessages;
     loadMessages();
-    const intervalId = setInterval(loadMessages, 2000);
+    const intervalId = setInterval(loadMessages, 10000);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      triggerMessageReloadRef.current = null;
     };
   }, [selectedConversationId]);
 
@@ -513,10 +606,22 @@ function ChatsPage() {
       <div className="chat-admin-layout">
         <aside className="chat-admin-list">
           <div className="chat-admin-search">
+            <svg 
+              className="chat-admin-search-icon" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
             <input
               type="search"
               value={searchKeyword}
-              placeholder="Tìm kiếm người nhắn tin..."
+              placeholder="Tìm kiếm người nhắn..."
               onChange={(event) => setSearchKeyword(event.target.value)}
             />
           </div>
@@ -537,7 +642,11 @@ function ChatsPage() {
                 onClick={() => setSelectedConversationId(conversation.id)}
                 onContextMenu={(event) => openConversationMenu(event, conversation.id)}
               >
-                <div className="chat-admin-conversation-avatar" aria-hidden="true">
+                <div 
+                  className="chat-admin-conversation-avatar" 
+                  aria-hidden="true"
+                  style={getAvatarStyle(conversation.guestName)}
+                >
                   {getAvatarLabel(conversation.guestName)}
                 </div>
                 <div className="chat-admin-conversation-content">
@@ -560,7 +669,11 @@ function ChatsPage() {
             <>
               <header className="chat-admin-panel-head">
                 <div className="chat-admin-panel-identity">
-                  <div className="chat-admin-conversation-avatar large" aria-hidden="true">
+                  <div 
+                    className="chat-admin-conversation-avatar large" 
+                    aria-hidden="true"
+                    style={getAvatarStyle(selectedConversation.guestName)}
+                  >
                     {getAvatarLabel(selectedConversation.guestName)}
                   </div>
                   <div className="chat-admin-panel-title">
@@ -596,8 +709,8 @@ function ChatsPage() {
                           />
                         ) : null}
                         {message.message ? <p>{message.message}</p> : null}
-                        <span>{message.createdAtLabel}</span>
                       </div>
+                      <span className="chat-admin-message-time">{message.createdAtLabel}</span>
                     </div>
                   </div>
                 ))}
@@ -627,7 +740,11 @@ function ChatsPage() {
                     onClick={() => imageInputRef.current?.click()}
                     aria-label="Chọn ảnh"
                   >
-                    +
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
                   </button>
                   <textarea
                     value={draft}
@@ -640,15 +757,27 @@ function ChatsPage() {
                     type="submit"
                     className="chat-admin-send-button"
                     disabled={sending || (!draft.trim() && !selectedImage)}
+                    aria-label="Gửi tin nhắn"
                   >
-                    Gửi
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
                   </button>
                 </div>
               </form>
             </>
           ) : (
             <div className="chat-admin-placeholder">
-              <p>{error ? "" : "Chọn một hội thoại để bắt đầu trả lời khách hàng."}</p>
+              <div className="chat-admin-placeholder-hero">
+                <div className="chat-admin-placeholder-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </div>
+                <h3>Trung tâm Tư vấn Khách hàng</h3>
+                <p>{error ? error : "Chọn một cuộc hội thoại từ danh sách bên trái để bắt đầu trò chuyện với khách hàng."}</p>
+              </div>
             </div>
           )}
         </div>

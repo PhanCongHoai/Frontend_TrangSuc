@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAuthHeaders } from "../../../utils/auth";
 import { buildApiUrl } from "../../../utils/api";
+import ConfirmModal from "../components/ConfirmModal";
 
 const initialFormState = {
   name: "",
@@ -16,14 +17,27 @@ function CategoriesPage() {
   const [submitState, setSubmitState] = useState("idle");
   const [submitMessage, setSubmitMessage] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
+
+  const showFeedback = (type, message) => {
+    setFeedback({ type, message });
+    setTimeout(() => {
+      setFeedback((prev) => (prev.message === message ? { type: "", message: "" } : prev));
+    }, 4000);
+  };
 
   const loadCategories = useCallback(async () => {
     try {
       setStatus("loading");
       setError("");
 
-      const response = await fetch(buildApiUrl("/api/categories"), {
+      const response = await fetch(buildApiUrl("/api/categories?all=true"), {
         headers: getAuthHeaders(),
       });
 
@@ -143,6 +157,7 @@ function CategoriesPage() {
 
       setSubmitState("success");
       setSubmitMessage("Đã thêm danh mục thành công.");
+      showFeedback("success", `Đã thêm danh mục "${form.name.trim()}" thành công.`);
       await loadCategories();
 
       setTimeout(() => {
@@ -152,71 +167,71 @@ function CategoriesPage() {
       console.error("Create category error:", submitError);
       setSubmitState("error");
       setSubmitMessage(submitError.message || "Không thể thêm danh mục.");
+      showFeedback("error", submitError.message || "Không thể thêm danh mục.");
     }
   };
 
-  const handleDeleteParent = async (parent) => {
-    const hasChildren = (childrenByParent[parent.id] || []).length > 0;
-
-    if (hasChildren) {
-      setSubmitState("error");
-      setSubmitMessage("Không thể xóa danh mục cha khi vẫn còn danh mục con.");
-      return;
+  const handleToggleVisibility = (category) => {
+    const nextHiddenState = !category.is_hidden;
+    const actionLabel = nextHiddenState ? "Ẩn" : "Hiện";
+    
+    let confirmMsg = `Bạn có chắc muốn ${actionLabel.toLowerCase()} danh mục "${category.name}" không?`;
+    if (nextHiddenState && category.parent_id === null) {
+      confirmMsg = `Lưu ý: Khi ẩn danh mục cha "${category.name}", tất cả các danh mục con và sản phẩm trực thuộc cũng sẽ bị ẩn theo. Bạn có chắc chắn muốn ẩn không?`;
     }
 
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa danh mục cha "${parent.name}" không?`
-    );
+    setConfirmModal({
+      isOpen: true,
+      message: confirmMsg,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, message: "", onConfirm: null });
+        try {
+          setTogglingId(category.id);
+          
+          const response = await fetch(
+            buildApiUrl(`/api/categories/${category.id}/visibility`),
+            {
+              method: "PUT",
+              headers: {
+                ...getAuthHeaders({
+                  "Content-Type": "application/json",
+                }),
+              },
+              body: JSON.stringify({
+                is_hidden: nextHiddenState,
+              }),
+            }
+          );
 
-    if (!confirmed) {
-      return;
-    }
+          const data = await response.json();
 
-    try {
-      setDeletingId(parent.id);
-      setSubmitState("idle");
-      setSubmitMessage("");
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || `Không thể ${actionLabel.toLowerCase()} danh mục.`);
+          }
 
-      const response = await fetch(
-        buildApiUrl(`/api/categories/${parent.id}`),
-        {
-          method: "DELETE",
-          headers: getAuthHeaders(),
+          showFeedback("success", data.message || `Đã ${actionLabel.toLowerCase()} danh mục thành công.`);
+          await loadCategories();
+        } catch (toggleError) {
+          console.error("Toggle category visibility error:", toggleError);
+          showFeedback("error", toggleError.message || `Không thể thực hiện thao tác.`);
+        } finally {
+          setTogglingId(null);
         }
-      );
-
-      const rawResponse = await response.text();
-      let data = null;
-
-      try {
-        data = rawResponse ? JSON.parse(rawResponse) : null;
-      } catch {
-        throw new Error(
-          "Backend không trả về JSON hợp lệ. Hãy kiểm tra API hoặc khởi động lại backend."
-        );
       }
-
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.message || "Không thể xóa danh mục.");
-      }
-
-      setSubmitState("success");
-      setSubmitMessage("Đã xóa danh mục thành công.");
-      await loadCategories();
-    } catch (deleteError) {
-      console.error("Delete category error:", deleteError);
-      setSubmitState("error");
-      setSubmitMessage(deleteError.message || "Không thể xóa danh mục.");
-    } finally {
-      setDeletingId(null);
-    }
+    });
   };
 
   return (
     <section className="panel-page">
-      <div className="page-head">
-        <h1>Quản lý danh mục</h1>
-        <p>Theo dõi cấu trúc danh mục cha, danh mục con và trạng thái đồng bộ với backend.</p>
+      <div className="page-head-container">
+        <div className="page-head">
+          <h1>Quản lý danh mục</h1>
+          <p>Theo dõi cấu trúc danh mục cha, danh mục con và trạng thái đồng bộ với backend.</p>
+        </div>
+        <div className="category-legend-box">
+          <strong>💡 Chú thích hệ thống</strong>
+          Danh mục dính tới đơn hàng nên không có cơ chế xóa, chỉ tạo button ẩn danh mục. Khi ẩn danh mục thì các sản phẩm trong danh mục đó cũng phải ẩn theo.
+        </div>
       </div>
 
       <div className="category-summary-grid category-summary-grid-rich">
@@ -241,6 +256,28 @@ function CategoriesPage() {
           <small>Toàn bộ bản ghi category backend đang phản hồi.</small>
         </article>
       </div>
+
+      {feedback.message ? (
+        <div className="admin-center-toast-backdrop" onClick={() => setFeedback({ type: "", message: "" })}>
+          <div
+            className={`admin-center-toast ${feedback.type === "error" ? "admin-center-toast-error" : "admin-center-toast-success"}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-center-toast-icon">
+              {feedback.type === "error" ? "❌" : "✅"}
+            </div>
+            <h4>{feedback.type === "error" ? "Thao tác thất bại" : "Thao tác thành công"}</h4>
+            <p>{feedback.message}</p>
+          </div>
+        </div>
+      ) : null}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, message: "", onConfirm: null })}
+      />
 
       {status === "error" ? (
         <div className="admin-notice admin-notice-error">
@@ -268,7 +305,7 @@ function CategoriesPage() {
           <div className="category-parent-list">
             {parentCategories.length ? (
               parentCategories.map((parent) => (
-                <article key={parent.id} className="category-parent-card">
+                <article key={parent.id} className={`category-parent-card ${parent.is_hidden ? "card-hidden" : ""}`}>
                   <div className="category-parent-card-main">
                     <div className="category-parent-avatar">{parent.name.slice(0, 1)}</div>
                     <div>
@@ -280,14 +317,6 @@ function CategoriesPage() {
                     <span className="status-pill">
                       {(childrenByParent[parent.id] || []).length} mục con
                     </span>
-                    <button
-                      type="button"
-                      className="danger-action"
-                      onClick={() => handleDeleteParent(parent)}
-                      disabled={deletingId === parent.id}
-                    >
-                      {deletingId === parent.id ? "Đang xóa..." : "Xóa"}
-                    </button>
                   </div>
                 </article>
               ))
@@ -314,7 +343,7 @@ function CategoriesPage() {
                 const children = childrenByParent[parent.id] || [];
 
                 return (
-                  <article key={parent.id} className="category-tree-card">
+                  <article key={parent.id} className="category-tree-card" style={parent.is_hidden ? { opacity: 0.65 } : {}}>
                     <div className="category-tree-root">
                       <div className="category-tree-root-node">
                         <strong>{parent.name}</strong>
@@ -327,7 +356,7 @@ function CategoriesPage() {
                       {children.length ? (
                         <div className="category-tree-children">
                           {children.map((child) => (
-                            <div key={child.id} className="category-tree-leaf">
+                            <div key={child.id} className="category-tree-leaf" style={child.is_hidden ? { opacity: 0.65 } : {}}>
                               <span className="category-tree-leaf-line" aria-hidden="true" />
                               <div className="category-child-chip">
                                 <small>#{child.id}</small>
@@ -371,15 +400,17 @@ function CategoriesPage() {
                 <th>Tên danh mục</th>
                 <th>Cấp</th>
                 <th>Danh mục cha</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {categories.map((item) => (
-                <tr key={item.id}>
+                <tr key={item.id} style={item.is_hidden ? { opacity: 0.65 } : {}}>
                   <td>#{item.id}</td>
                   <td>
                     <div className="category-table-name">
-                      <strong>{item.name}</strong>
+                      <strong style={item.is_hidden ? { color: "#999", textDecoration: "line-through" } : {}}>{item.name}</strong>
                       <small>
                         {item.parent_id === null ? "Danh mục gốc" : "Danh mục phân nhánh"}
                       </small>
@@ -398,6 +429,21 @@ function CategoriesPage() {
                     {item.parent_id === null
                       ? "Danh mục gốc"
                       : categories.find((entry) => entry.id === item.parent_id)?.name || "-"}
+                  </td>
+                  <td>
+                    <span className={`status-badge ${item.is_hidden ? "hidden" : "active"}`}>
+                      {item.is_hidden ? "Đã ẩn" : "Hiển thị"}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className={`action-btn ${item.is_hidden ? "show-btn" : "hide-btn"}`}
+                      onClick={() => handleToggleVisibility(item)}
+                      disabled={togglingId === item.id}
+                    >
+                      {togglingId === item.id ? "..." : item.is_hidden ? "Hiện" : "Ẩn"}
+                    </button>
                   </td>
                 </tr>
               ))}

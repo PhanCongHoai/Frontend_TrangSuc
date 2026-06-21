@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAuthHeaders } from "../../../utils/auth";
 import { buildApiUrl, buildAssetUrl, normalizeApiMessage } from "../../../utils/api";
+import ConfirmModal from "../components/ConfirmModal";
 import {
   markProductBlocked,
   notifyProductCatalogChanged,
@@ -8,7 +9,7 @@ import {
   unmarkProductBlocked,
 } from "../../../utils/productSync";
 
-const PRODUCT_PAGE_SIZE = 20;
+const ADMIN_PAGE_SIZE = 10;
 const initialForm = { categoryId: "", name: "", description: "", materialType: "", baseWeight: "", status: "ACTIVE", variants: [], mainImageUrl: "", laborCost: "", stoneCost: "", markupRate: "", priceTiers: [] };
 
 function formatCurrency(value) {
@@ -91,6 +92,64 @@ function normalizeFormPriceTiers(priceTiers) {
         tier.markup_rate >= 0 &&
         (tier.max_quantity === null || tier.max_quantity >= tier.min_quantity)
     );
+}
+
+function validatePriceTiers(priceTiers) {
+  if (!Array.isArray(priceTiers) || priceTiers.length === 0) {
+    return null;
+  }
+
+  const normalized = [];
+
+  for (let i = 0; i < priceTiers.length; i++) {
+    const tier = priceTiers[i];
+
+    const rawMin = tier.minQuantity;
+    const rawMax = tier.maxQuantity;
+    const rawRate = tier.markupRate;
+
+    const minQty = rawMin === "" || rawMin === null || rawMin === undefined ? NaN : Number(rawMin);
+    const maxQty = rawMax === "" || rawMax === null || rawMax === undefined ? null : Number(rawMax);
+    const markupRate = rawRate === "" || rawRate === null || rawRate === undefined ? NaN : Number(rawRate);
+
+    if (Number.isNaN(minQty) || minQty < 1 || !Number.isInteger(minQty)) {
+      return `Bậc số lượng thứ ${i + 1}: Số lượng bắt đầu ("Từ SL") phải là số nguyên lớn hơn hoặc bằng 1.`;
+    }
+    if (Number.isNaN(markupRate) || markupRate < 0) {
+      return `Bậc số lượng thứ ${i + 1}: Tỷ lệ markup phải là số lớn hơn hoặc bằng 0.`;
+    }
+    if (maxQty !== null) {
+      if (Number.isNaN(maxQty) || maxQty < 1 || !Number.isInteger(maxQty)) {
+        return `Bậc số lượng thứ ${i + 1}: Số lượng kết thúc ("Đến SL") phải là số nguyên lớn hơn hoặc bằng 1.`;
+      }
+      if (maxQty < minQty) {
+        return `Bậc số lượng thứ ${i + 1}: Số lượng kết thúc ("Đến SL": ${maxQty}) không được nhỏ hơn số lượng bắt đầu ("Từ SL": ${minQty}).`;
+      }
+    }
+
+    normalized.push({
+      min: minQty,
+      max: maxQty,
+      originalIndex: i
+    });
+  }
+
+  // Sắp xếp các bậc theo số lượng bắt đầu (min)
+  normalized.sort((a, b) => a.min - b.min);
+
+  for (let i = 0; i < normalized.length - 1; i++) {
+    const current = normalized[i];
+    const next = normalized[i + 1];
+
+    if (current.max === null) {
+      return `Bậc số lượng từ ${current.min} đến vô cùng phải là bậc cuối cùng. Không thể có thêm bậc khác sau nó.`;
+    }
+    if (next.min <= current.max) {
+      return `Các bậc số lượng bị chồng chéo nhau: Bậc từ ${current.min} đến ${current.max} chồng chéo với bậc từ ${next.min} đến ${next.max !== null ? next.max : "vô cùng"}.`;
+    }
+  }
+
+  return null;
 }
 
 
@@ -187,14 +246,20 @@ function ProductsPage() {
   const [processingProductId, setProcessingProductId] = useState(null);
   const [isDeletingAllProducts, setIsDeletingAllProducts] = useState(false);
   const [isHidingAllProducts, setIsHidingAllProducts] = useState(false);
-  const [visibleProductCount, setVisibleProductCount] = useState(PRODUCT_PAGE_SIZE);
+  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
 
   const loadPageData = async () => {
     try {
       setStatus("loading");
       setError("");
       const [categoriesResponse, productsResponse, materialsResponse] = await Promise.all([
-        fetch(buildApiUrl("/api/categories"), { headers: getAuthHeaders() }),
+        fetch(buildApiUrl("/api/categories?all=true"), { headers: getAuthHeaders() }),
         fetch(buildApiUrl("/api/products/admin/list"), { headers: getAuthHeaders() }),
         fetch(buildApiUrl("/api/gold-rates/materials"), { headers: getAuthHeaders() }),
       ]);
@@ -278,18 +343,30 @@ function ProductsPage() {
       (product.variants || []).some((variant) =>
         String(variant.sku || "").toLowerCase().includes(keyword)
       );
-    return matchCategory && matchKeyword;
-  }), [productList, searchKeyword, selectedCategoryIds]);
+    const prodStatus = String(product.status || "").toUpperCase();
+    const matchStatus =
+      activeStatusFilter === "all" ||
+      (activeStatusFilter === "active" && prodStatus === "ACTIVE") ||
+      (activeStatusFilter === "hidden" && (prodStatus === "HIDDEN" || prodStatus === "DRAFT"));
+    return matchCategory && matchKeyword && matchStatus;
+  }), [productList, searchKeyword, selectedCategoryIds, activeStatusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ADMIN_PAGE_SIZE));
 
   useEffect(() => {
-    setVisibleProductCount(PRODUCT_PAGE_SIZE);
-  }, [activeCategory, searchKeyword, productList.length]);
+    setCurrentPage(1);
+  }, [activeCategory, searchKeyword, activeStatusFilter, productList.length]);
 
-  const visibleProducts = useMemo(
-    () => filteredProducts.slice(0, visibleProductCount),
-    [filteredProducts, visibleProductCount]
-  );
-  const hasMoreProducts = visibleProductCount < filteredProducts.length;
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const visibleProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ADMIN_PAGE_SIZE;
+    return filteredProducts.slice(startIndex, startIndex + ADMIN_PAGE_SIZE);
+  }, [filteredProducts, currentPage]);
 
   const summary = useMemo(() => {
     const totalStock = productList.reduce(
@@ -471,121 +548,125 @@ function ProductsPage() {
     }
   };
 
-  const handleDeleteProduct = async (productId) => {
+  const handleDeleteProduct = (productId) => {
     const targetProduct = productList.find((product) => product.id === productId);
     const productName = targetProduct?.name || `#${productId}`;
-    if (!window.confirm(`Bạn có chắc muốn xóa sản phẩm ${productName}?`)) return;
-    try {
-      setProcessingProductId(productId);
-      setError("");
-      const response = await fetch(buildApiUrl(`/api/products/admin/${productId}`), { method: "DELETE", headers: getAuthHeaders() });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể xóa sản phẩm."));
-      setProductList((prev) => prev.filter((product) => product.id !== productId));
-      unmarkProductBlocked(productId, "deleted");
-      notifyProductCatalogChanged("deleted", productId);
-    } catch (deleteError) {
-      console.error("Delete product error:", deleteError);
-      setError(normalizeApiMessage(deleteError.message, "Không thể xóa sản phẩm."));
-    } finally {
-      setProcessingProductId(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      message: `Bạn có chắc muốn xóa sản phẩm ${productName}?`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, message: "", onConfirm: null });
+        try {
+          setProcessingProductId(productId);
+          setError("");
+          const response = await fetch(buildApiUrl(`/api/products/admin/${productId}`), { method: "DELETE", headers: getAuthHeaders() });
+          const data = await response.json();
+          if (!response.ok || !data.success) throw new Error(normalizeApiMessage(data.message, "Không thể xóa sản phẩm."));
+          setProductList((prev) => prev.filter((product) => product.id !== productId));
+          unmarkProductBlocked(productId, "deleted");
+          notifyProductCatalogChanged("deleted", productId);
+        } catch (deleteError) {
+          console.error("Delete product error:", deleteError);
+          setError(normalizeApiMessage(deleteError.message, "Không thể xóa sản phẩm."));
+        } finally {
+          setProcessingProductId(null);
+        }
+      }
+    });
   };
 
-  const handleHideAllProducts = async () => {
+  const handleHideAllProducts = () => {
     if (!productList.length) {
       setError("Không có sản phẩm để ẩn.");
       return;
     }
 
-    const confirmed = window.confirm(
-      "Bạn có chắc muốn ẩn TẤT CẢ sản phẩm? Sản phẩm sẽ không hiện ở trang khách hàng nhưng vẫn còn trong admin."
-    );
+    setConfirmModal({
+      isOpen: true,
+      message: "Bạn có chắc muốn ẩn TẤT CẢ sản phẩm? Sản phẩm sẽ không hiện ở trang khách hàng nhưng vẫn còn trong admin.",
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, message: "", onConfirm: null });
+        try {
+          setIsHidingAllProducts(true);
+          setError("");
+          setSubmitMessage("");
+          setSubmitError("");
+          const response = await fetch(buildApiUrl("/api/products/admin/all/hide"), {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+          });
+          const data = await response.json();
 
-    if (!confirmed) {
-      return;
-    }
+          if (!response.ok || !data.success) {
+            throw new Error(normalizeApiMessage(data.message, "Không thể ẩn tất cả sản phẩm."));
+          }
 
-    try {
-      setIsHidingAllProducts(true);
-      setError("");
-      setSubmitMessage("");
-      setSubmitError("");
-      const response = await fetch(buildApiUrl("/api/products/admin/all/hide"), {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      });
-      const data = await response.json();
+          const productIds = productList.map((product) => Number(product.id)).filter(Boolean);
+          productIds.forEach((productId) => markProductBlocked(productId, "bulk-hidden"));
+          notifyProductCatalogChanged("bulk-hidden", null);
 
-      if (!response.ok || !data.success) {
-        throw new Error(normalizeApiMessage(data.message, "Không thể ẩn tất cả sản phẩm."));
+          setProductList((prev) =>
+            prev.map((product) => ({
+              ...product,
+              status: "HIDDEN",
+              status_label: normalizeStatusLabel("HIDDEN"),
+            }))
+          );
+          setSubmitMessage(`Đã ẩn tất cả sản phẩm (${Number(data.totalProducts || productIds.length)}).`);
+          setSubmitError("");
+        } catch (hideError) {
+          console.error("Hide all products error:", hideError);
+          setSubmitMessage("");
+          setError(normalizeApiMessage(hideError.message, "Không thể ẩn tất cả sản phẩm."));
+        } finally {
+          setIsHidingAllProducts(false);
+        }
       }
-
-      const productIds = productList.map((product) => Number(product.id)).filter(Boolean);
-      productIds.forEach((productId) => markProductBlocked(productId, "bulk-hidden"));
-      notifyProductCatalogChanged("bulk-hidden", null);
-
-      setProductList((prev) =>
-        prev.map((product) => ({
-          ...product,
-          status: "HIDDEN",
-          status_label: normalizeStatusLabel("HIDDEN"),
-        }))
-      );
-      setSubmitMessage(`Đã ẩn tất cả sản phẩm (${Number(data.totalProducts || productIds.length)}).`);
-      setSubmitError("");
-    } catch (hideError) {
-      console.error("Hide all products error:", hideError);
-      setSubmitMessage("");
-      setError(normalizeApiMessage(hideError.message, "Không thể ẩn tất cả sản phẩm."));
-    } finally {
-      setIsHidingAllProducts(false);
-    }
+    });
   };
 
-  const handleDeleteAllProducts = async () => {
+  const handleDeleteAllProducts = () => {
     if (!productList.length) {
       setError("Không có sản phẩm để xóa.");
       return;
     }
 
-    const confirmed = window.confirm(
-      "Bạn có chắc muốn xóa TẤT CẢ sản phẩm? Hành động này không thể hoàn tác."
-    );
+    setConfirmModal({
+      isOpen: true,
+      message: "Bạn có chắc muốn xóa TẤT CẢ sản phẩm? Hành động này không thể hoàn tác.",
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, message: "", onConfirm: null });
+        try {
+          setIsDeletingAllProducts(true);
+          setError("");
+          setSubmitMessage("");
+          setSubmitError("");
+          const response = await fetch(buildApiUrl("/api/products/admin/all"), {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+          });
+          const data = await response.json();
 
-    if (!confirmed) {
-      return;
-    }
+          if (!response.ok || !data.success) {
+            throw new Error(normalizeApiMessage(data.message, "Không thể xóa tất cả sản phẩm."));
+          }
 
-    try {
-      setIsDeletingAllProducts(true);
-      setError("");
-      setSubmitMessage("");
-      setSubmitError("");
-      const response = await fetch(buildApiUrl("/api/products/admin/all"), {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      const data = await response.json();
+          const deletedIds = productList.map((product) => Number(product.id)).filter(Boolean);
+          deletedIds.forEach((productId) => unmarkProductBlocked(productId, "bulk-deleted"));
+          notifyProductCatalogChanged("bulk-deleted", null);
 
-      if (!response.ok || !data.success) {
-        throw new Error(normalizeApiMessage(data.message, "Không thể xóa tất cả sản phẩm."));
+          setProductList([]);
+          setSubmitMessage(`Đã xóa tất cả sản phẩm (${Number(data.deletedProducts || 0)}).`);
+          setSubmitError("");
+        } catch (deleteError) {
+          console.error("Delete all products error:", deleteError);
+          setSubmitMessage("");
+          setError(normalizeApiMessage(deleteError.message, "Không thể xóa tất cả sản phẩm."));
+        } finally {
+          setIsDeletingAllProducts(false);
+        }
       }
-
-      const deletedIds = productList.map((product) => Number(product.id)).filter(Boolean);
-      deletedIds.forEach((productId) => unmarkProductBlocked(productId, "bulk-deleted"));
-      notifyProductCatalogChanged("bulk-deleted", null);
-
-      setProductList([]);
-      setSubmitMessage(`Đã xóa tất cả sản phẩm (${Number(data.deletedProducts || 0)}).`);
-      setSubmitError("");
-    } catch (deleteError) {
-      console.error("Delete all products error:", deleteError);
-      setSubmitMessage("");
-      setError(normalizeApiMessage(deleteError.message, "Không thể xóa tất cả sản phẩm."));
-    } finally {
-      setIsDeletingAllProducts(false);
-    }
+    });
   };
 
   const handleSubmit = async (event) => {
@@ -600,6 +681,12 @@ function ProductsPage() {
     ) {
       setSubmitMessage("");
       setSubmitError("Vui lòng nhập đầy đủ tên sản phẩm, chất liệu và ít nhất một biến thể có SKU.");
+      return;
+    }
+    const tierValidationError = validatePriceTiers(form.priceTiers);
+    if (tierValidationError) {
+      setSubmitMessage("");
+      setSubmitError(tierValidationError);
       return;
     }
     try {
@@ -686,6 +773,14 @@ function ProductsPage() {
                 ))}
               </div>
             </div>
+            <div className="product-category-dropdown">
+              <button type="button" className="product-category-dropdown-trigger"><span>Trạng thái</span><strong>{activeStatusFilter === "all" ? "Tất cả" : activeStatusFilter === "active" ? "Đang hiện" : "Đang ẩn"}</strong></button>
+              <div className="product-category-dropdown-menu">
+                <button type="button" className={`product-category-dropdown-item ${activeStatusFilter === "all" ? "active" : ""}`} onClick={() => setActiveStatusFilter("all")}>Tất cả</button>
+                <button type="button" className={`product-category-dropdown-item ${activeStatusFilter === "active" ? "active" : ""}`} onClick={() => setActiveStatusFilter("active")}>Đang hiện</button>
+                <button type="button" className={`product-category-dropdown-item ${activeStatusFilter === "hidden" ? "active" : ""}`} onClick={() => setActiveStatusFilter("hidden")}>Đang ẩn</button>
+              </div>
+            </div>
             <label className="product-search"><span>Tìm theo tên / SKU</span><input type="search" value={searchKeyword} onChange={(event) => setSearchKeyword(event.target.value)} placeholder="VD: Nhẫn vàng hoặc RING-24K-001" /></label>
           </div>
           {status === "loading" ? <div className="admin-notice"><strong>Đang tải dữ liệu sản phẩm...</strong><p>Hệ thống đang đọc danh sách thật từ backend.</p></div> : null}
@@ -732,18 +827,39 @@ function ProductsPage() {
               );
             })}
           </div>
-          {hasMoreProducts ? (
-            <div className="product-load-more">
+          {totalPages > 1 && (
+            <div className="admin-pagination">
               <button
                 type="button"
-                onClick={() =>
-                  setVisibleProductCount((current) => current + PRODUCT_PAGE_SIZE)
-                }
+                className="admin-pagination-arrow"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
-                Xem thêm sản phẩm ({visibleProducts.length}/{filteredProducts.length})
+                &laquo; Trước
+              </button>
+              {Array.from({ length: totalPages }, (_, idx) => {
+                const pageNumber = idx + 1;
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className={`admin-pagination-number ${currentPage === pageNumber ? "active" : ""}`}
+                    onClick={() => setCurrentPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="admin-pagination-arrow"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Sau &raquo;
               </button>
             </div>
-          ) : null}
+          )}
         </section>
       </div>
       {isCreateModalOpen ? (
@@ -849,6 +965,13 @@ function ProductsPage() {
           </section>
         </div>
       ) : null}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, message: "", onConfirm: null })}
+      />
     </section>
   );
 }

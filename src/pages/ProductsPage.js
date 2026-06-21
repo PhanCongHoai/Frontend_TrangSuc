@@ -15,6 +15,7 @@ import { buildApiUrl, buildAssetUrl } from "../utils/api";
 import {
   getLatestProductCatalogSync,
   subscribeProductVisibilityChange,
+  syncBlockedProductIds,
 } from "../utils/productSync";
 import "./ProductsPage.css";
 
@@ -95,7 +96,10 @@ function ProductsPage() {
           throw new Error(data?.message || "Không thể tải danh sách sản phẩm.");
         }
 
-        setProducts(Array.isArray(data.products) ? data.products : []);
+        const loadedProducts = Array.isArray(data.products) ? data.products : [];
+        const activeIds = loadedProducts.map((product) => Number(product.id));
+        syncBlockedProductIds(activeIds);
+        setProducts(loadedProducts);
         setCategories(Array.isArray(data.categories) ? data.categories : []);
         setPagination({
           page: Number(data?.pagination?.page || 1),

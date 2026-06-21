@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./footer/Footer";
 import {
@@ -119,12 +119,23 @@ function normalizeShippingStatus(status) {
 }
 
 function formatDateTime(value) {
+  if (!value) {
+    return "Chưa xác định";
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "Không rõ thời gian";
   }
 
-  return date.toLocaleString("vi-VN");
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hourCycle: "h23",
+  }).format(date);
 }
 
 function normalizeOrderStatus(status) {
@@ -178,7 +189,98 @@ function formatParcelDimensions(length, width, height) {
 }
 
 function OrdersPage() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+
+  const canCancelOrder = (order) => {
+    const status = String(order.status || "").trim().toUpperCase();
+    const shippingStatus = String(order.shippingStatus || "").trim().toUpperCase();
+    return (
+      !["CANCELLED", "COMPLETED"].includes(status) &&
+      ["PENDING", "READY_TO_PICK", ""].includes(shippingStatus)
+    );
+  };
+
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "confirm",
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
+  const showModal = (type, title, message, onConfirm = null) => {
+    setModalConfig({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onConfirm,
+    });
+  };
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleCancelOrder = (orderId) => {
+    showModal(
+      "confirm",
+      "Xác nhận hủy đơn",
+      "Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.",
+      async () => {
+        try {
+          const response = await fetch(`${ORDERS_API}/my/${orderId}/cancel`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+          });
+          const data = await response.json();
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || "Không thể hủy đơn hàng.");
+          }
+          
+          setOrders((prevOrders) =>
+            prevOrders.map((ord) =>
+              ord.id === orderId
+                ? {
+                    ...ord,
+                    status: "CANCELLED",
+                    shippingStatus: "CANCELLED",
+                  }
+                : ord
+            )
+          );
+          
+          showModal("alert", "Thành công", "Đơn hàng đã được hủy thành công.");
+        } catch (err) {
+          showModal("alert", "Lỗi", err.message || "Đã xảy ra lỗi khi hủy đơn hàng.");
+        }
+      }
+    );
+  };
+
+  const handleReorder = (order) => {
+    const reorderData = {
+      items: (order.items || []).map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+        name: item.name,
+        image: item.image,
+        unitPrice: item.unitPrice,
+      })),
+      recipient: {
+        fullName: order.recipientName,
+        phone: order.recipientPhone,
+        email: order.recipientEmail,
+        streetAddress: order.streetAddress,
+        provinceName: order.provinceName,
+        districtName: order.districtName,
+        wardName: order.wardName,
+        note: order.note,
+      },
+    };
+    navigate("/checkout", { state: { reorderData } });
+  };
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
@@ -285,8 +387,8 @@ function OrdersPage() {
       reloadOrders();
     });
 
-    eventSource.onerror = () => {
-      eventSource.close();
+    eventSource.onerror = (err) => {
+      console.warn("SSE stream connection error, browser will attempt auto-reconnect", err);
     };
 
     return () => {
@@ -357,6 +459,7 @@ function OrdersPage() {
       const normalizedShippingStatus = normalizeShippingStatus(order.shippingStatus);
       const fields = [
         order.orderCode,
+        order.shippingCode,
         order.title,
         order.recipientName,
         order.recipientPhone,
@@ -569,6 +672,7 @@ function OrdersPage() {
             <div className="orders-table-body">
               {filteredOrders.map((order, index) => {
                 const resolvedStatus = normalizeOrderStatus(order.status);
+                const isDelivered = ["DELIVERED", "COMPLETED", "SUCCESS"].includes(String(order.status || "").trim().toUpperCase());
                 const resolvedPaymentLabel = normalizePaymentLabel(
                   order.paymentLabel || order.paymentMethod
                 );
@@ -590,7 +694,7 @@ function OrdersPage() {
                     >
                       <div className="orders-td orders-td-code">
                         <strong className="order-code-text">{order.orderCode || `#DH-${order.id}`}</strong>
-                        <span className="order-date-text">{formatDateTime(order.createdAt)}</span>
+                        <span className="order-date-text">Ngày đặt: {formatDateTime(order.createdAt)}</span>
                       </div>
                       <div className="orders-td orders-td-product">
                         {firstItem.name ? (
@@ -667,7 +771,7 @@ function OrdersPage() {
                               </p>
                               <p>
                                 <span>Mã vận đơn:</span>
-                                <strong>{order.orderCode || "Chưa có"}</strong>
+                                <strong>{order.shippingCode || "Chưa có"}</strong>
                               </p>
                               <p>
                                 <span>Khối lượng:</span>
@@ -699,8 +803,12 @@ function OrdersPage() {
                                 <strong>{resolvedPaymentStatus}</strong>
                               </p>
                               <p className="orders-detail-full-width">
-                                <span>Ngày thanh toán:</span>
+                                <span>Ngày đặt hàng:</span>
                                 <strong>{formatDateTime(order.createdAt)}</strong>
+                              </p>
+                              <p className="orders-detail-full-width">
+                                <span>Ngày thanh toán:</span>
+                                <strong>{order.paidAt ? formatDateTime(order.paidAt) : "Chưa thanh toán"}</strong>
                               </p>
                             </div>
                           </div>
@@ -756,6 +864,28 @@ function OrdersPage() {
                             <strong>{formatCurrency(order.total || 0)}</strong>
                           </div>
                         </div>
+
+                        {/* Actions bar for cancelling or reordering */}
+                        <div className="orders-details-actions-bar">
+                          {canCancelOrder(order) && (
+                            <button
+                              type="button"
+                              className="orders-action-btn btn-cancel"
+                              onClick={() => handleCancelOrder(order.id)}
+                            >
+                              Hủy đơn hàng
+                            </button>
+                          )}
+                          {isDelivered && (
+                            <button
+                              type="button"
+                              className="orders-action-btn btn-reorder"
+                              onClick={() => handleReorder(order)}
+                            >
+                              Mua lại
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -766,6 +896,51 @@ function OrdersPage() {
         ) : null}
       </main>
       <Footer />
+
+      {modalConfig.isOpen && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal-box">
+            <div className="custom-modal-header">
+              <h3>{modalConfig.title}</h3>
+              <button type="button" className="custom-modal-close-btn" onClick={closeModal}>&times;</button>
+            </div>
+            <div className="custom-modal-body">
+              <p>{modalConfig.message}</p>
+            </div>
+            <div className="custom-modal-footer">
+              {modalConfig.type === "confirm" ? (
+                <>
+                  <button
+                    type="button"
+                    className="custom-modal-btn btn-secondary"
+                    onClick={closeModal}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    className="custom-modal-btn btn-danger"
+                    onClick={() => {
+                      if (modalConfig.onConfirm) modalConfig.onConfirm();
+                      closeModal();
+                    }}
+                  >
+                    Xác nhận hủy
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="custom-modal-btn btn-primary"
+                  onClick={closeModal}
+                >
+                  Đồng ý
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

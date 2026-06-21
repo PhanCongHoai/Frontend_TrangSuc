@@ -13,6 +13,7 @@ import {
   getBlockedProductIds,
   getLatestProductCatalogSync,
   subscribeProductVisibilityChange,
+  syncBlockedProductIds,
 } from "../../utils/productSync";
 import {
   getLatestBannerSync,
@@ -102,6 +103,8 @@ function HomePage() {
             pageData.success && Array.isArray(pageData.products) ? pageData.products : []
           ),
         ];
+        const activeIds = allProducts.map((product) => Number(product.id));
+        syncBlockedProductIds(activeIds);
         const blockedIds = getBlockedProductIds();
         setFeaturedProducts(
           allProducts.filter((product) => !blockedIds.includes(Number(product.id)))

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAuthHeaders } from "../../../utils/auth";
 import { buildApiUrl } from "../../../utils/api";
 import { notifyBannerChanged } from "../../../utils/bannerSync";
+import ConfirmModal from "../components/ConfirmModal";
 
 const initialForm = {
   id: "",
@@ -26,6 +27,11 @@ function BannersPage() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingBannerId, setDeletingBannerId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
 
   useEffect(() => {
     const loadBanner = async () => {
@@ -61,30 +67,30 @@ function BannersPage() {
     loadBanner();
   }, []);
 
-  const handleImageChange = async (event) => {
-    const files = Array.from(event.target.files || []);
-
-    if (!files.length) {
-      return;
-    }
-
-    try {
-      const dataUrls = await Promise.all(files.map((file) => readFileAsDataUrl(file)));
-      setForm((prev) => ({
-        ...prev,
-        imageUrl: dataUrls[0] || "",
-        imageUrls: dataUrls,
-      }));
-      setError("");
-      setMessage("");
-    } catch (imageError) {
-      console.error("Read banner image error:", imageError);
-      setError(imageError.message || "Không thể tải ảnh banner.");
-    }
+  const handleLinkChange = (event) => {
+    const url = event.target.value;
+    setForm((prev) => ({
+      ...prev,
+      imageUrl: url,
+      imageUrls: [url],
+    }));
+    setError("");
+    setMessage("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    const trimmedUrl = String(form.imageUrl || "").trim();
+    if (!trimmedUrl) {
+      setError("Vui lòng nhập link ảnh banner.");
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(trimmedUrl) && !trimmedUrl.startsWith("/")) {
+      setError("Link ảnh banner phải bắt đầu bằng http://, https:// hoặc /");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -99,7 +105,7 @@ function BannersPage() {
           }),
         },
         body: JSON.stringify({
-          image_urls: form.imageUrls.length ? form.imageUrls : [form.imageUrl],
+          image_urls: [trimmedUrl],
         }),
       });
 
@@ -129,44 +135,47 @@ function BannersPage() {
     }
   };
 
-  const handleDeleteBanner = async (banner) => {
+  const handleDeleteBanner = (banner) => {
     const bannerId = Number(banner?.id || 0);
 
     if (!bannerId || deletingBannerId) {
       return;
     }
 
-    if (!window.confirm(`Bạn có chắc muốn xóa banner #${bannerId}?`)) {
-      return;
-    }
+    setConfirmModal({
+      isOpen: true,
+      message: `Bạn có chắc muốn xóa banner #${bannerId}?`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, message: "", onConfirm: null });
+        try {
+          setDeletingBannerId(bannerId);
+          setError("");
+          setMessage("");
 
-    try {
-      setDeletingBannerId(bannerId);
-      setError("");
-      setMessage("");
+          const response = await fetch(
+            buildApiUrl(`/api/banners/admin/home-hero/${bannerId}`),
+            {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+            }
+          );
+          const data = await response.json();
 
-      const response = await fetch(
-        buildApiUrl(`/api/banners/admin/home-hero/${bannerId}`),
-        {
-          method: "DELETE",
-          headers: getAuthHeaders(),
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || "Không thể xóa banner.");
+          }
+
+          setBanners((current) => current.filter((item) => Number(item.id) !== bannerId));
+          setMessage(data.message || "Đã xóa banner.");
+          notifyBannerChanged("home_hero");
+        } catch (deleteError) {
+          console.error("Delete banner error:", deleteError);
+          setError(deleteError.message || "Không thể xóa banner.");
+        } finally {
+          setDeletingBannerId(null);
         }
-      );
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Không thể xóa banner.");
       }
-
-      setBanners((current) => current.filter((item) => Number(item.id) !== bannerId));
-      setMessage(data.message || "Đã xóa banner.");
-      notifyBannerChanged("home_hero");
-    } catch (deleteError) {
-      console.error("Delete banner error:", deleteError);
-      setError(deleteError.message || "Không thể xóa banner.");
-    } finally {
-      setDeletingBannerId(null);
-    }
+    });
   };
 
   return (
@@ -198,29 +207,35 @@ function BannersPage() {
         <form className="category-form" onSubmit={handleSubmit}>
           <div className="category-form-grid">
             <label className="category-form-field category-form-field-wide">
-              <span>Ảnh banner</span>
+              <span>Link ảnh banner</span>
               <input
-                className="product-file-input"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
+                type="text"
+                value={form.imageUrl}
+                onChange={handleLinkChange}
+                placeholder="Nhập địa chỉ URL của ảnh (ví dụ: https://example.com/banner.jpg)"
               />
               <small className="field-hint">
-                Chọn một hoặc nhiều ảnh từ máy tính để thêm vào banner trang chủ.
+                Cung cấp đường dẫn URL công khai của ảnh làm banner trang chủ.
               </small>
             </label>
 
-            {form.imageUrls.length ? (
+            {form.imageUrl.trim() ? (
               <div className="product-image-preview category-form-field category-form-field-wide">
                 <span>Xem trước banner</span>
                 <div className="banner-gallery">
-                  {form.imageUrls.map((imageUrl, index) => (
-                    <div className="banner-gallery-card" key={`${index}-${imageUrl.length}`}>
-                      <img src={imageUrl} alt={`Banner trang chủ ${index + 1}`} />
-                      <span>Ảnh {index + 1}</span>
-                    </div>
-                  ))}
+                  <div className="banner-gallery-card">
+                    <img 
+                      src={form.imageUrl.trim()} 
+                      alt="Xem trước banner" 
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                      onLoad={(e) => {
+                        e.target.style.display = "block";
+                      }}
+                    />
+                    <span>Xem trước</span>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -232,7 +247,7 @@ function BannersPage() {
           ) : null}
 
           <div className="category-form-actions">
-            <button type="submit" disabled={isSubmitting || !form.imageUrls.length}>
+            <button type="submit" disabled={isSubmitting || !form.imageUrl.trim()}>
               {isSubmitting ? "Đang lưu..." : "Thêm banner"}
             </button>
           </div>
@@ -257,6 +272,13 @@ function BannersPage() {
           </div>
         ) : null}
       </section>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, message: "", onConfirm: null })}
+      />
     </section>
   );
 }

@@ -14,6 +14,8 @@ import ProductsPage from "./pages/ProductsPage";
 import AboutPage from "./pages/AboutPage";
 import ArticlesPage from "./pages/ArticlesPage";
 import ArticleDetailPage from "./pages/ArticleDetailPage";
+import ReturnRequestPage from "./pages/ReturnRequestPage";
+import ReturnPolicyPage from "./pages/ReturnPolicyPage";
 import Admin from "./pages/admin/Admin";
 import BannersPage from "./pages/admin/pages/BannersPage";
 import ChatsPage from "./pages/admin/pages/ChatsPage";
@@ -24,6 +26,9 @@ import GoldRatesPage from "./pages/admin/pages/GoldRatesPage";
 import AdminOrdersPage from "./pages/admin/pages/OrdersPage";
 import AdminProductsPage from "./pages/admin/pages/ProductsPage";
 import ReportsPage from "./pages/admin/pages/ReportsPage";
+import PromotionsPage from "./pages/admin/pages/PromotionsPage";
+import AdminReturnRequestsPage from "./pages/admin/pages/ReturnRequestsPage";
+import ShipperSimulatorPage from "./pages/admin/pages/ShipperSimulatorPage";
 import {
   BLOCKED_ACCOUNT_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
@@ -194,6 +199,8 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/returns" element={<ReturnRequestPage />} />
+        <Route path="/return-policy" element={<ReturnPolicyPage />} />
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/articles" element={<ArticlesPage />} />
@@ -209,6 +216,9 @@ function App() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="chats" element={<ChatsPage />} />
+          <Route path="promotions" element={<PromotionsPage />} />
+          <Route path="return-requests" element={<AdminReturnRequestsPage />} />
+          <Route path="shipper-simulator" element={<ShipperSimulatorPage />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

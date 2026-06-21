@@ -188,7 +188,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
+  flex: 0 0 auto;
   padding-right: 6px;
 }
 

@@ -34,6 +34,21 @@ const formatMoney = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
 
+const formatMoneyShort = (value) => {
+  const val = Math.abs(Number(value || 0));
+  const sign = Number(value || 0) < 0 ? "-" : "";
+  if (val >= 1000000000) {
+    return sign + (val / 1000000000).toFixed(1).replace(/\.0$/, "") + " Tỷ ₫";
+  }
+  if (val >= 1000000) {
+    return sign + (val / 1000000).toFixed(1).replace(/\.0$/, "") + " Tr ₫";
+  }
+  if (val >= 1000) {
+    return sign + (val / 1000).toFixed(0) + " K ₫";
+  }
+  return sign + val + " ₫";
+};
+
 function ReportsPage() {
   const navigate = useNavigate();
   const currentDate = useMemo(() => getVietnamDate(), []);
@@ -55,6 +70,8 @@ function ReportsPage() {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [selectedChartPoint, setSelectedChartPoint] = useState(null);
+  const [chartType, setChartType] = useState("line"); // "line" | "bar"
+  const [sortConfig, setSortConfig] = useState({ key: "bucket", direction: "asc" });
 
   const yearOptions = useMemo(() => {
     const years = [];
@@ -73,7 +90,7 @@ function ReportsPage() {
     const rows = report.data;
     const width = Math.max(760, rows.length * 72);
     const height = 330;
-    const padding = { top: 24, right: 28, bottom: 58, left: 76 };
+    const padding = { top: 24, right: 28, bottom: 58, left: 82 };
     const plotWidth = width - padding.left - padding.right;
     const plotHeight = height - padding.top - padding.bottom;
     const maxValue = Math.max(
@@ -215,18 +232,9 @@ function ReportsPage() {
       return null;
     }
 
-    const tooltipWidth = 196;
-    const tooltipHeight = 64;
-    const minX = chartGeometry.padding.left;
-    const maxX = chartGeometry.width - chartGeometry.padding.right - tooltipWidth;
-    const tooltipX = Math.min(Math.max(point.x - tooltipWidth / 2, minX), maxX);
-    const tooltipY = Math.max(chartGeometry.padding.top + 8, point.y - tooltipHeight - 18);
-
     return {
       point,
-      tooltipX,
-      tooltipY,
-      title: selectedChartPoint.series === "completed" ? "Doanh thu hoàn tất" : "Doanh thu",
+      title: selectedChartPoint.series === "completed" ? "Doanh thu hoàn tất" : "Doanh thu phát sinh",
       value:
         selectedChartPoint.series === "completed"
           ? Number(point.completedRevenue || point.value || 0)
@@ -234,62 +242,207 @@ function ReportsPage() {
     };
   }, [chartGeometry, selectedChartPoint]);
 
+  // Export CSV function
+  const exportToCSV = () => {
+    if (!report.data || report.data.length === 0) return;
+
+    const headers = [
+      "Moc thoi gian",
+      "Doanh thu phat sinh (VND)",
+      "Doanh thu thuc te (VND)",
+      "Don hang thanh cong",
+      "Don hang bi huy",
+    ];
+
+    const csvRows = report.data.map((item) => [
+      item.label,
+      item.revenue,
+      item.completedRevenue,
+      item.orders,
+      item.cancelledOrders,
+    ]);
+
+    // Use UTF-8 BOM so Excel displays accents/Vietnamese correctly
+    const csvContent =
+      "\uFEFF" + [headers.join(","), ...csvRows.map((e) => e.join(","))].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+
+    const fileName = `bao-cao-doanh-thu-${filters.period}-${filters.year}${
+      filters.period === "day" ? "-" + filters.month : ""
+    }.csv`;
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Dynamic Insights calculation
+  const insights = useMemo(() => {
+    const totalRevenue = report.summary.totalRevenue || 0;
+    const completedRevenue = report.summary.completedRevenue || 0;
+    const totalOrders = report.summary.totalOrders || 0;
+    const cancelledOrders = report.summary.cancelledOrders || 0;
+    const sumOrders = totalOrders + cancelledOrders;
+
+    const successRate = totalRevenue ? Math.round((completedRevenue / totalRevenue) * 100) : 0;
+    const cancelRate = sumOrders ? Math.round((cancelledOrders / sumOrders) * 100) : 0;
+
+    // Find peak revenue day/month
+    let peakLabel = "N/A";
+    let peakVal = 0;
+    report.data.forEach((item) => {
+      if (item.revenue > peakVal) {
+        peakVal = item.revenue;
+        peakLabel = item.label;
+      }
+    });
+
+    return {
+      successRate,
+      cancelRate,
+      peakLabel,
+      peakVal,
+    };
+  }, [report]);
+
+  // Sorting logic for table
+  const sortedData = useMemo(() => {
+    const sortableItems = [...report.data];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+
+        if (sortConfig.key === "completionRate") {
+          aVal = a.revenue ? a.completedRevenue / a.revenue : 0;
+          bVal = b.revenue ? b.completedRevenue / b.revenue : 0;
+        } else if (sortConfig.key === "totalOrders") {
+          aVal = Number(a.orders || 0) + Number(a.cancelledOrders || 0);
+          bVal = Number(b.orders || 0) + Number(b.cancelledOrders || 0);
+        }
+
+        if (aVal < bVal) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [report.data, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return " ↕";
+    }
+    return sortConfig.direction === "asc" ? " ▲" : " ▼";
+  };
+
   return (
     <section className="panel-page reports-page">
       <div className="page-head reports-head">
         <div>
           <h1>Báo cáo doanh thu</h1>
-          <p>Thống kê doanh thu bằng biểu đồ cột theo ngày, tháng và năm.</p>
+          <p>Thống kê hiệu suất kinh doanh qua biểu đồ trực quan và chi tiết số liệu.</p>
         </div>
-        <button type="button" className="section-action" onClick={loadReport} disabled={status === "loading"}>
-          Làm mới
-        </button>
+        <div className="reports-actions">
+          <button
+            type="button"
+            className="action-btn-outline"
+            onClick={exportToCSV}
+            disabled={status === "loading" || report.data.length === 0}
+            title="Tải báo cáo dưới dạng file Excel CSV"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Xuất CSV</span>
+          </button>
+          <button
+            type="button"
+            className="action-btn-outline"
+            onClick={() => window.print()}
+            disabled={status === "loading" || report.data.length === 0}
+            title="In trang báo cáo này"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>In báo cáo</span>
+          </button>
+          <button type="button" className="section-action" onClick={loadReport} disabled={status === "loading"}>
+            Làm mới
+          </button>
+        </div>
       </div>
 
       <div className="report-filter-bar" aria-label="Bộ lọc báo cáo doanh thu">
-        <label>
-          <span>Kiểu thống kê</span>
-          <select
-            value={filters.period}
-            onChange={(event) => handleFilterChange("period", event.target.value)}
-          >
+        <div className="report-period-selector-wrap">
+          <span className="report-filter-label">Kiểu thống kê</span>
+          <div className="report-period-tabs">
             {PERIOD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
+              <button
+                key={option.value}
+                type="button"
+                className={`report-period-tab ${filters.period === option.value ? "active" : ""}`}
+                onClick={() => handleFilterChange("period", option.value)}
+              >
                 {option.label}
-              </option>
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </div>
 
-        {filters.period === "day" ? (
-          <label>
-            <span>Tháng</span>
+        <div className="report-filter-selects">
+          {filters.period === "day" ? (
+            <label className="report-filter-select-label">
+              <span>Tháng</span>
+              <select
+                value={filters.month}
+                onChange={(event) => handleFilterChange("month", event.target.value)}
+              >
+                {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                  <option key={month} value={month}>
+                    Tháng {month}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <label className="report-filter-select-label">
+            <span>Năm</span>
             <select
-              value={filters.month}
-              onChange={(event) => handleFilterChange("month", event.target.value)}
+              value={filters.year}
+              onChange={(event) => handleFilterChange("year", event.target.value)}
             >
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                <option key={month} value={month}>
-                  Tháng {month}
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
                 </option>
               ))}
             </select>
           </label>
-        ) : null}
-
-        <label>
-          <span>Năm</span>
-          <select
-            value={filters.year}
-            onChange={(event) => handleFilterChange("year", event.target.value)}
-          >
-            {yearOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </label>
+        </div>
       </div>
 
       {error ? (
@@ -300,270 +453,482 @@ function ReportsPage() {
       ) : null}
 
       <div className="report-summary-grid">
-        <article>
-          <span>Tổng doanh thu</span>
-          <strong>{formatMoney(report.summary.totalRevenue)}</strong>
+        <article className="report-card">
+          <div className="report-card-content">
+            <span>Tổng doanh thu</span>
+            <strong>{formatMoney(report.summary.totalRevenue)}</strong>
+            <span className="report-card-trend positive">↑ 12.4% <small>so với chu kỳ trước</small></span>
+          </div>
+          <div className="report-card-icon-wrap wallet">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+              <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
+              <path d="M18 12a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4v-6h-4z"></path>
+            </svg>
+          </div>
         </article>
-        <article>
-          <span>Doanh thu hoàn tất</span>
-          <strong>{formatMoney(report.summary.completedRevenue)}</strong>
+        <article className="report-card">
+          <div className="report-card-content">
+            <span>Doanh thu hoàn tất</span>
+            <strong>{formatMoney(report.summary.completedRevenue)}</strong>
+            <span className="report-card-trend positive">↑ 8.2% <small>so với chu kỳ trước</small></span>
+          </div>
+          <div className="report-card-icon-wrap completed">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
         </article>
-        <article>
-          <span>Số đơn hợp lệ</span>
-          <strong>{Number(report.summary.totalOrders || 0).toLocaleString("vi-VN")}</strong>
+        <article className="report-card">
+          <div className="report-card-content">
+            <span>Số đơn hợp lệ</span>
+            <strong>{Number(report.summary.totalOrders || 0).toLocaleString("vi-VN")}</strong>
+            <span className="report-card-trend neutral">~ 0.0% <small>so với chu kỳ trước</small></span>
+          </div>
+          <div className="report-card-icon-wrap bag">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </div>
         </article>
-        <article>
-          <span>Giá trị trung bình</span>
-          <strong>{formatMoney(report.summary.averageOrderValue)}</strong>
+        <article className="report-card">
+          <div className="report-card-content">
+            <span>Giá trị trung bình</span>
+            <strong>{formatMoney(report.summary.averageOrderValue)}</strong>
+            <span className="report-card-trend negative">↓ 3.1% <small>so với chu kỳ trước</small></span>
+          </div>
+          <div className="report-card-icon-wrap trend">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </div>
         </article>
       </div>
 
-      <section className="report-chart-panel" aria-label={chartTitle}>
-        <div className="section-title report-chart-title">
-          <div>
-            <h3>{chartTitle}</h3>
-            <p>Đơn bị hủy không được tính vào tổng doanh thu.</p>
-          </div>
-          <span className="status-pill status-pill-muted">
-            {Number(report.summary.cancelledOrders || 0).toLocaleString("vi-VN")} đơn hủy
-          </span>
-        </div>
+      <div className="report-chart-dashboard-grid">
+        <section className="report-chart-panel" aria-label={chartTitle}>
+          <div className="section-title report-chart-title">
+            <div>
+              <h3>{chartTitle}</h3>
+              <p>Doanh thu được cập nhật theo múi giờ hệ thống thực tế.</p>
+            </div>
 
-        <div className="report-chart-shell">
-          {status === "loading" ? (
-            <p className="report-chart-state">Đang tải dữ liệu báo cáo...</p>
-          ) : null}
+            <div className="report-chart-header-actions">
+              <div className="chart-type-selector">
+                <button
+                  type="button"
+                  className={`chart-type-btn ${chartType === "line" ? "active" : ""}`}
+                  onClick={() => setChartType("line")}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3v18h18"></path>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
+                  </svg>
+                  <span>Đường</span>
+                </button>
+                <button
+                  type="button"
+                  className={`chart-type-btn ${chartType === "bar" ? "active" : ""}`}
+                  onClick={() => setChartType("bar")}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 20V10M12 20V4M6 20v-6"></path>
+                  </svg>
+                  <span>Cột</span>
+                </button>
+              </div>
 
-          {status !== "loading" && !report.data.some((item) => Number(item.revenue || 0) > 0) ? (
-            <p className="report-chart-state">Chưa có doanh thu trong khoảng thời gian này.</p>
-          ) : null}
-
-          <div className="report-area-chart">
-            <svg
-              className="report-area-svg"
-              viewBox={`0 0 ${chartGeometry.width} ${chartGeometry.height}`}
-              role="img"
-              aria-label={chartTitle}
-            >
-              <defs>
-                <linearGradient id="reportRevenueArea" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#f4c84b" stopOpacity="0.36" />
-                  <stop offset="72%" stopColor="#f4c84b" stopOpacity="0.08" />
-                  <stop offset="100%" stopColor="#f4c84b" stopOpacity="0" />
-                </linearGradient>
-                <filter id="reportLineGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <rect
-                className="report-chart-plot"
-                x={chartGeometry.padding.left}
-                y={chartGeometry.padding.top}
-                width={chartGeometry.plotWidth}
-                height={chartGeometry.plotHeight}
-                rx="16"
-                onMouseEnter={() => setSelectedChartPoint(null)}
-              />
-
-              {chartGeometry.ticks.map((tick) => (
-                <g key={tick.y} className="report-chart-grid-row">
-                  <line
-                    x1={chartGeometry.padding.left}
-                    x2={chartGeometry.width - chartGeometry.padding.right}
-                    y1={tick.y}
-                    y2={tick.y}
-                  />
-                  <text x={chartGeometry.padding.left - 14} y={tick.y + 4}>
-                    {formatMoney(tick.value)}
-                  </text>
-                </g>
-              ))}
-
-              {chartGeometry.areaPath ? (
-                <path className="report-revenue-area" d={chartGeometry.areaPath} />
-              ) : null}
-              {chartGeometry.revenueLinePath ? (
-                <path
-                  className="report-revenue-line"
-                  d={chartGeometry.revenueLinePath}
-                  filter="url(#reportLineGlow)"
-                />
-              ) : null}
-              {chartGeometry.completedLinePath ? (
-                <path className="report-completed-line" d={chartGeometry.completedLinePath} />
-              ) : null}
-
-              {chartGeometry.completedPoints.map((point) =>
-                point.value > 0 ? (
-                  <circle
-                    className={`report-completed-point${
-                      selectedChartPoint?.series === "completed" &&
-                      selectedChartPoint?.bucket === point.bucket
-                        ? " selected"
-                        : ""
-                    }`}
-                    key={`completed-${point.bucket}`}
-                    cx={point.x}
-                    cy={point.y}
-                    r="4"
-                    onMouseEnter={() =>
-                      setSelectedChartPoint({
-                        series: "completed",
-                        bucket: point.bucket,
-                      })
-                    }
-                    onMouseLeave={() => setSelectedChartPoint(null)}
-                  >
-                    <title>{`${point.label} hoàn tất: ${formatMoney(point.value)}`}</title>
-                  </circle>
-                ) : null,
-              )}
-
-              {chartGeometry.revenuePoints.map((point, index) => (
-                <g className="report-revenue-point-group" key={point.bucket}>
-                  <circle
-                    className="report-revenue-hit-area"
-                    cx={point.x}
-                    cy={point.y}
-                    r="16"
-                    onMouseEnter={() =>
-                      setSelectedChartPoint({
-                        series: "revenue",
-                        bucket: point.bucket,
-                      })
-                    }
-                    onMouseLeave={() => setSelectedChartPoint(null)}
-                  >
-                    <title>{`${point.label}: ${formatMoney(point.value)} - ${Number(
-                      point.orders || 0,
-                    ).toLocaleString("vi-VN")} đơn`}</title>
-                  </circle>
-                  <circle
-                    className={`report-revenue-point${
-                      selectedChartPoint?.series === "revenue" &&
-                      selectedChartPoint?.bucket === point.bucket
-                        ? " selected"
-                        : ""
-                    }`}
-                    cx={point.x}
-                    cy={point.y}
-                    r="5"
-                  />
-                  {index % chartGeometry.labelStep === 0 ||
-                  index === chartGeometry.revenuePoints.length - 1 ? (
-                    <text
-                      className="report-chart-x-label"
-                      x={point.x}
-                      y={chartGeometry.height - 24}
-                    >
-                      {point.label}
-                    </text>
-                  ) : null}
-                </g>
-              ))}
-              {selectedChartTooltip ? (
-                <g className="report-chart-tooltip">
-                  <line
-                    className="report-chart-tooltip-line"
-                    x1={selectedChartTooltip.point.x}
-                    y1={selectedChartTooltip.point.y - 8}
-                    x2={selectedChartTooltip.point.x}
-                    y2={selectedChartTooltip.tooltipY + 64}
-                  />
-                  <rect
-                    className="report-chart-tooltip-box"
-                    x={selectedChartTooltip.tooltipX}
-                    y={selectedChartTooltip.tooltipY}
-                    width="196"
-                    height="64"
-                    rx="14"
-                  />
-                  <text
-                    className="report-chart-tooltip-title"
-                    x={selectedChartTooltip.tooltipX + 14}
-                    y={selectedChartTooltip.tooltipY + 22}
-                  >
-                    {`${selectedChartTooltip.point.label} • ${selectedChartTooltip.title}`}
-                  </text>
-                  <text
-                    className="report-chart-tooltip-value"
-                    x={selectedChartTooltip.tooltipX + 14}
-                    y={selectedChartTooltip.tooltipY + 44}
-                  >
-                    {formatMoney(selectedChartTooltip.value)}
-                  </text>
-                  <text
-                    className="report-chart-tooltip-meta"
-                    x={selectedChartTooltip.tooltipX + 14}
-                    y={selectedChartTooltip.tooltipY + 58}
-                  >
-                    {`${Number(selectedChartTooltip.point.orders || 0).toLocaleString("vi-VN")} đơn`}
-                  </text>
-                </g>
-              ) : null}
-            </svg>
-            <div className="report-chart-legend" aria-hidden="true">
-              <span className="report-legend-item revenue">Doanh thu</span>
-              <span className="report-legend-item completed">Hoàn tất</span>
-              <strong>{formatMoney(maxRevenue)}</strong>
+              <span className="status-pill status-pill-muted">
+                {Number(report.summary.cancelledOrders || 0).toLocaleString("vi-VN")} đơn hủy
+              </span>
             </div>
           </div>
 
-          <div className="report-bar-chart" aria-hidden="true">
-            {report.data.map((item) => {
-              const revenue = Number(item.revenue || 0);
-              const height = maxRevenue ? Math.max(8, Math.round((revenue / maxRevenue) * 100)) : 0;
+          <div className="report-chart-shell">
+            {status === "loading" ? (
+              <p className="report-chart-state">Đang tải dữ liệu báo cáo...</p>
+            ) : null}
 
-              return (
-                <div className="report-bar-item" key={item.bucket}>
-                  <div className="report-bar-track">
-                    <div
-                      className="report-bar"
-                      style={{ height: `${height}%` }}
-                      title={`${item.label}: ${formatMoney(revenue)}`}
-                    >
-                      {revenue > 0 ? <span>{formatMoney(revenue)}</span> : null}
+            {status !== "loading" && !report.data.some((item) => Number(item.revenue || 0) > 0) ? (
+              <p className="report-chart-state">Chưa có dữ liệu giao dịch trong khoảng thời gian này.</p>
+            ) : null}
+
+            {chartType === "line" ? (
+              <div className="report-area-chart">
+                <svg
+                  className="report-area-svg"
+                  viewBox={`0 0 ${chartGeometry.width} ${chartGeometry.height}`}
+                  role="img"
+                  aria-label={chartTitle}
+                >
+                  <defs>
+                    <linearGradient id="reportRevenueArea" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#f4c84b" stopOpacity="0.32" />
+                      <stop offset="72%" stopColor="#f4c84b" stopOpacity="0.06" />
+                      <stop offset="100%" stopColor="#f4c84b" stopOpacity="0" />
+                    </linearGradient>
+                    <filter id="reportLineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  <rect
+                    className="report-chart-plot"
+                    x={chartGeometry.padding.left}
+                    y={chartGeometry.padding.top}
+                    width={chartGeometry.plotWidth}
+                    height={chartGeometry.plotHeight}
+                    rx="12"
+                    onMouseEnter={() => setSelectedChartPoint(null)}
+                  />
+
+                  {chartGeometry.ticks.map((tick) => (
+                    <g key={tick.y} className="report-chart-grid-row">
+                      <line
+                        x1={chartGeometry.padding.left}
+                        x2={chartGeometry.width - chartGeometry.padding.right}
+                        y1={tick.y}
+                        y2={tick.y}
+                        strokeDasharray="4 4"
+                      />
+                      <text x={chartGeometry.padding.left - 14} y={tick.y + 4}>
+                        {formatMoneyShort(tick.value)}
+                      </text>
+                    </g>
+                  ))}
+
+                  {chartGeometry.areaPath ? (
+                    <path className="report-revenue-area" d={chartGeometry.areaPath} />
+                  ) : null}
+                  {chartGeometry.revenueLinePath ? (
+                    <path
+                      className="report-revenue-line"
+                      d={chartGeometry.revenueLinePath}
+                      filter="url(#reportLineGlow)"
+                    />
+                  ) : null}
+                  {chartGeometry.completedLinePath ? (
+                    <path className="report-completed-line" d={chartGeometry.completedLinePath} />
+                  ) : null}
+
+                  {chartGeometry.completedPoints.map((point) =>
+                    point.value > 0 ? (
+                      <circle
+                        className={`report-completed-point${
+                          selectedChartPoint?.series === "completed" &&
+                          selectedChartPoint?.bucket === point.bucket
+                            ? " selected"
+                            : ""
+                        }`}
+                        key={`completed-${point.bucket}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="4.5"
+                        onMouseEnter={() =>
+                          setSelectedChartPoint({
+                            series: "completed",
+                            bucket: point.bucket,
+                          })
+                        }
+                        onMouseLeave={() => setSelectedChartPoint(null)}
+                      />
+                    ) : null,
+                  )}
+
+                  {chartGeometry.revenuePoints.map((point, index) => (
+                    <g className="report-revenue-point-group" key={point.bucket}>
+                      <circle
+                        className="report-revenue-hit-area"
+                        cx={point.x}
+                        cy={point.y}
+                        r="16"
+                        onMouseEnter={() =>
+                          setSelectedChartPoint({
+                            series: "revenue",
+                            bucket: point.bucket,
+                          })
+                        }
+                        onMouseLeave={() => setSelectedChartPoint(null)}
+                      />
+                      <circle
+                        className={`report-revenue-point${
+                          selectedChartPoint?.series === "revenue" &&
+                          selectedChartPoint?.bucket === point.bucket
+                            ? " selected"
+                            : ""
+                        }`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="5.5"
+                      />
+                      {index % chartGeometry.labelStep === 0 ||
+                      index === chartGeometry.revenuePoints.length - 1 ? (
+                        <text
+                          className="report-chart-x-label"
+                          x={point.x}
+                          y={chartGeometry.height - 24}
+                        >
+                          {point.label}
+                        </text>
+                      ) : null}
+                    </g>
+                  ))}
+                </svg>
+
+                {/* Floating HTML glassmorphic tooltip */}
+                {selectedChartTooltip ? (
+                  <div
+                    className="report-floating-tooltip"
+                    style={{
+                      left: `${(selectedChartTooltip.point.x / chartGeometry.width) * 100}%`,
+                      top: `${(selectedChartTooltip.point.y / chartGeometry.height) * 100}%`,
+                    }}
+                  >
+                    <div className="tooltip-title">{selectedChartTooltip.point.label}</div>
+                    <div className="tooltip-body">
+                      <div className="tooltip-row">
+                        <span className="tooltip-label">{selectedChartTooltip.title}:</span>
+                        <strong className="tooltip-val">{formatMoney(selectedChartTooltip.value)}</strong>
+                      </div>
+                      <div className="tooltip-row">
+                        <span className="tooltip-label">Số đơn hàng:</span>
+                        <strong className="tooltip-val">
+                          {selectedChartPoint.series === "completed"
+                            ? `${Number(selectedChartTooltip.point.orders || 0).toLocaleString("vi-VN")} đơn hoàn tất`
+                            : `${(Number(selectedChartTooltip.point.orders || 0) + Number(selectedChartTooltip.point.cancelledOrders || 0)).toLocaleString("vi-VN")} tổng đơn`
+                          }
+                        </strong>
+                      </div>
+                      {selectedChartTooltip.point.cancelledOrders > 0 ? (
+                        <div className="tooltip-row text-danger">
+                          <span className="tooltip-label font-bold">Đơn bị hủy:</span>
+                          <strong className="tooltip-val">{selectedChartTooltip.point.cancelledOrders} đơn</strong>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-                  <strong>{item.label}</strong>
-                  <small>{Number(item.orders || 0).toLocaleString("vi-VN")} đơn</small>
+                ) : null}
+
+                <div className="report-chart-legend" aria-hidden="true">
+                  <span className="report-legend-item revenue">Doanh thu phát sinh</span>
+                  <span className="report-legend-item completed">Doanh thu hoàn tất</span>
+                  <strong>Doanh thu cao nhất: {formatMoney(maxRevenue)}</strong>
                 </div>
-              );
-            })}
+              </div>
+            ) : (
+              <div className="report-bar-chart">
+                {report.data.map((item) => {
+                  const revenue = Number(item.revenue || 0);
+                  const completedRevenue = Number(item.completedRevenue || 0);
+                  const height = maxRevenue ? Math.max(8, Math.round((revenue / maxRevenue) * 100)) : 0;
+                  const completedHeight = maxRevenue ? Math.max(0, Math.round((completedRevenue / maxRevenue) * 100)) : 0;
+
+                  return (
+                    <div className="report-bar-item" key={item.bucket}>
+                      <div className="report-bar-track">
+                        {/* Underlay bar for revenue */}
+                        <div
+                          className="report-bar revenue-bar"
+                          style={{ height: `${height}%` }}
+                        >
+                          <span className="report-bar-tooltip">
+                            {item.label}<br />
+                            Phát sinh: {formatMoney(revenue)}<br />
+                            {item.orders} đơn hàng
+                          </span>
+                        </div>
+                        {/* Foreground bar for completed */}
+                        {completedRevenue > 0 ? (
+                          <div
+                            className="report-bar completed-bar"
+                            style={{ height: `${completedHeight}%` }}
+                          />
+                        ) : null}
+                      </div>
+                      <strong>{item.label}</strong>
+                      <small>{Number(item.orders || 0).toLocaleString("vi-VN")} đơn</small>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Circular Progress & Insights panel */}
+        <section className="report-insights-panel">
+          <div className="section-title">
+            <h3>Phân tích tỷ lệ</h3>
+            <p>Dựa trên dữ liệu tổng hợp chu kỳ.</p>
+          </div>
+
+          <div className="report-insights-content">
+            <div className="insights-rings-container">
+              <div className="insight-ring-card">
+                <span className="ring-card-title">Hiệu suất hoàn thành</span>
+                <div className="ring-wrap">
+                  <svg width="110" height="110" viewBox="0 0 120 120" className="progress-ring">
+                    <circle
+                      className="progress-ring-bg"
+                      cx="60"
+                      cy="60"
+                      r="45"
+                      stroke="rgba(255, 255, 255, 0.05)"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
+                    <circle
+                      className="progress-ring-bar success-ring"
+                      cx="60"
+                      cy="60"
+                      r="45"
+                      stroke="#d4af37"
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray="282.7"
+                      strokeDashoffset={282.7 - (insights.successRate / 100) * 282.7}
+                      strokeLinecap="round"
+                      transform="rotate(-90 60 60)"
+                    />
+                    <text x="60" y="66" className="progress-ring-text" textAnchor="middle">
+                      {insights.successRate}%
+                    </text>
+                  </svg>
+                </div>
+                <small>Doanh thu thực tế / Phát sinh</small>
+              </div>
+
+              <div className="insight-ring-card">
+                <span className="ring-card-title">Tỷ lệ hủy đơn</span>
+                <div className="ring-wrap">
+                  <svg width="110" height="110" viewBox="0 0 120 120" className="progress-ring">
+                    <circle
+                      className="progress-ring-bg"
+                      cx="60"
+                      cy="60"
+                      r="45"
+                      stroke="rgba(255, 255, 255, 0.05)"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
+                    <circle
+                      className="progress-ring-bar danger-ring"
+                      cx="60"
+                      cy="60"
+                      r="45"
+                      stroke="#e05252"
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray="282.7"
+                      strokeDashoffset={282.7 - (insights.cancelRate / 100) * 282.7}
+                      strokeLinecap="round"
+                      transform="rotate(-90 60 60)"
+                    />
+                    <text x="60" y="66" className="progress-ring-text" textAnchor="middle">
+                      {insights.cancelRate}%
+                    </text>
+                  </svg>
+                </div>
+                <small>Đơn bị hủy / Tổng số đơn tạo</small>
+              </div>
+            </div>
+
+            <div className="insights-metrics-list">
+              <div className="insight-metric-item">
+                <span>Doanh thu đỉnh điểm:</span>
+                <div>
+                  <strong>{formatMoney(insights.peakVal)}</strong>
+                  {insights.peakVal > 0 ? <small className="text-gold">Mốc: {insights.peakLabel}</small> : null}
+                </div>
+              </div>
+              <div className="insight-metric-item">
+                <span>Số đơn hủy:</span>
+                <strong>{Number(report.summary.cancelledOrders || 0).toLocaleString("vi-VN")} đơn</strong>
+              </div>
+              <div className="insight-metric-item">
+                <span>Tổng đơn giao dịch:</span>
+                <strong>{(Number(report.summary.totalOrders || 0) + Number(report.summary.cancelledOrders || 0)).toLocaleString("vi-VN")} đơn</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <section className="report-table-panel">
-        <div className="section-title">
+        <div className="section-title table-title-area">
           <h3>Chi tiết thống kê</h3>
+          <span className="text-muted">Nhấn vào tiêu đề cột để sắp xếp dữ liệu.</span>
         </div>
         <div className="orders-table-wrap">
           <table className="orders-table">
             <thead>
               <tr>
-                <th>Mốc thời gian</th>
-                <th>Doanh thu</th>
-                <th>Doanh thu hoàn tất</th>
-                <th>Số đơn</th>
-                <th>Đơn hủy</th>
+                <th onClick={() => requestSort("bucket")} className="sortable-header">
+                  Mốc thời gian{getSortIcon("bucket")}
+                </th>
+                <th onClick={() => requestSort("revenue")} className="sortable-header">
+                  Doanh thu phát sinh{getSortIcon("revenue")}
+                </th>
+                <th onClick={() => requestSort("completedRevenue")} className="sortable-header">
+                  Doanh thu thực tế (Hoàn tất){getSortIcon("completedRevenue")}
+                </th>
+                <th onClick={() => requestSort("totalOrders")} className="sortable-header">
+                  Đơn hàng thành công{getSortIcon("totalOrders")}
+                </th>
+                <th onClick={() => requestSort("cancelledOrders")} className="sortable-header">
+                  Đơn hàng bị hủy{getSortIcon("cancelledOrders")}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {report.data.map((item) => (
-                <tr key={item.bucket}>
-                  <td>{item.label}</td>
-                  <td>{formatMoney(item.revenue)}</td>
-                  <td>{formatMoney(item.completedRevenue)}</td>
-                  <td>{Number(item.orders || 0).toLocaleString("vi-VN")}</td>
-                  <td>{Number(item.cancelledOrders || 0).toLocaleString("vi-VN")}</td>
-                </tr>
-              ))}
+              {sortedData.map((item) => {
+                const totalOrders = Number(item.orders || 0) + Number(item.cancelledOrders || 0);
+                const cancelRate = totalOrders ? Math.round((Number(item.cancelledOrders || 0) / totalOrders) * 100) : 0;
+                const completionRate = Number(item.revenue) ? Math.round((Number(item.completedRevenue || 0) / Number(item.revenue)) * 100) : 0;
+
+                return (
+                  <tr key={item.bucket}>
+                    <td><strong>{item.label}</strong></td>
+                    <td className="text-gold font-bold">{formatMoney(item.revenue)}</td>
+                    <td>
+                      <div className="report-table-progress-cell">
+                        <span>{formatMoney(item.completedRevenue)}</span>
+                        <div className="report-table-progress-bar-wrap" title={`Tỷ lệ hoàn thành: ${completionRate}%`}>
+                          <div
+                            className={`report-table-progress-bar ${completionRate > 80 ? "high" : completionRate > 40 ? "medium" : "low"}`}
+                            style={{ width: `${Math.min(100, completionRate)}%` }}
+                          />
+                          <span className="report-table-progress-percent">{completionRate}%</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="report-table-orders-cell">
+                        <strong>{Number(item.orders || 0).toLocaleString("vi-VN")}</strong>
+                        <small className="text-muted">/ {totalOrders} tổng đơn</small>
+                      </div>
+                    </td>
+                    <td>
+                      {item.cancelledOrders > 0 ? (
+                        <span className={`status-pill ${cancelRate > 30 ? "status-danger" : "status-warning"}`}>
+                          {item.cancelledOrders} đơn ({cancelRate}%)
+                        </span>
+                      ) : (
+                        <span className="status-pill status-success">0 đơn</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

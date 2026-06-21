@@ -389,6 +389,9 @@ function Header() {
             <NavLink to="/orders" onClick={handleNavigateFromMenu}>
               Đơn hàng
             </NavLink>
+            <NavLink to="/returns" onClick={handleNavigateFromMenu}>
+              Hoàn hàng
+            </NavLink>
             <NavLink
               to="/compare"
               className="header-compare-link"
@@ -510,6 +513,9 @@ function Header() {
             </NavLink>
             <NavLink to="/orders" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
               <span>Đơn hàng</span>
+            </NavLink>
+            <NavLink to="/returns" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
+              <span>Hoàn hàng</span>
             </NavLink>
             <NavLink to="/compare" className="mobile-drawer-link" onClick={handleNavigateFromMenu}>
               <span>So sánh</span>

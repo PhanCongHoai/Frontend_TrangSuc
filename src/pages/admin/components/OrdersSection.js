@@ -109,7 +109,7 @@ function OrdersSection({
               <th>Thanh toán</th>
               <th>Tổng tiền</th>
               <th>Trạng thái</th>
-              <th>Cập nhật</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -152,19 +152,22 @@ function OrdersSection({
                     </span>
                   </td>
                   <td>
-                    <select
-                      className="orders-status-select"
-                      value={order.status}
-                      disabled={updatingOrderId === order.id}
-                      onChange={(event) => onUpdateOrderStatus(order.id, event.target.value)}
-                    >
-                      {ORDER_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {updatingOrderId === order.id ? <small>Đang lưu...</small> : null}
+                    {order.status !== "COMPLETED" && order.status !== "CANCELLED" ? (
+                      <button
+                        type="button"
+                        className="orders-cancel-button"
+                        disabled={updatingOrderId === order.id}
+                        onClick={() => {
+                          if (window.confirm(`Xác nhận hủy đơn hàng ${order.code}?`)) {
+                            onUpdateOrderStatus(order.id, "CANCELLED");
+                          }
+                        }}
+                      >
+                        {updatingOrderId === order.id ? "Đang xử lý..." : "Hủy đơn"}
+                      </button>
+                    ) : (
+                      <span className="orders-action-done">—</span>
+                    )}
                   </td>
                 </tr>
               ))

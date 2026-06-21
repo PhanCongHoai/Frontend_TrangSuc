@@ -154,3 +154,16 @@ export function subscribeProductVisibilityChange(callback) {
     window.removeEventListener("storage", handleStorageEvent);
   };
 }
+
+export function syncBlockedProductIds(activeProductIds) {
+  try {
+    const currentBlocked = readBlockedProductIds();
+    const activeSet = new Set(activeProductIds.map(Number));
+    const nextBlocked = currentBlocked.filter((id) => !activeSet.has(id));
+    if (nextBlocked.length !== currentBlocked.length) {
+      writeBlockedProductIds(nextBlocked);
+    }
+  } catch (error) {
+    console.error("Sync blocked product ids error:", error);
+  }
+}

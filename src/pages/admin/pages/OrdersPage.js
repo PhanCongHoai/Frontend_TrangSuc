@@ -64,8 +64,8 @@ function OrdersPage() {
       loadOrders();
     });
 
-    eventSource.onerror = () => {
-      eventSource.close();
+    eventSource.onerror = (err) => {
+      console.warn("SSE stream connection error, browser will attempt auto-reconnect", err);
     };
 
     return () => {
@@ -130,7 +130,7 @@ function OrdersPage() {
       setFeedback({
         type: "success",
         title: "Đã cập nhật đơn hàng.",
-        message: `Đơn ${String(orderId).padStart(5, "0")} đã chuyển sang ${
+        message: `Đơn OD${String(orderId).padStart(5, "0")} đã chuyển sang ${
           data.order?.statusLabel || nextStatus
         }.`,
       });
