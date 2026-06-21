@@ -15,11 +15,15 @@ function OrdersSection({
   filteredOrdersCount,
   searchKeyword,
   statusFilter,
+  startDate,
+  endDate,
   currentPage,
   totalPages,
   updatingOrderId,
   onSearchChange,
   onStatusFilterChange,
+  onStartDateChange,
+  onEndDateChange,
   onPageChange,
   onRefresh,
   onUpdateOrderStatus,
@@ -84,6 +88,38 @@ function OrdersSection({
             ))}
           </select>
         </label>
+
+        <label className="orders-date-filter">
+          <span>Từ ngày</span>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(event) => onStartDateChange(event.target.value)}
+          />
+        </label>
+
+        <label className="orders-date-filter">
+          <span>Đến ngày</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(event) => onEndDateChange(event.target.value)}
+          />
+        </label>
+
+        {startDate || endDate ? (
+          <button
+            type="button"
+            className="orders-clear-date-btn"
+            onClick={() => {
+              onStartDateChange("");
+              onEndDateChange("");
+            }}
+            title="Xóa bộ lọc khoảng thời gian"
+          >
+            Xóa ngày
+          </button>
+        ) : null}
 
         <button type="button" className="orders-refresh-button" onClick={onRefresh}>
           Làm mới

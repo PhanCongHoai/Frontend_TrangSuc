@@ -9,12 +9,13 @@ const ORDERS_PAGE_SIZE = 10;
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
-  const [summary, setSummary] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
@@ -33,11 +34,9 @@ function OrdersPage() {
       }
 
       setOrders(Array.isArray(data.orders) ? data.orders : []);
-      setSummary(Array.isArray(data.summary) ? data.summary : []);
       setStatus("success");
     } catch (fetchError) {
       setOrders([]);
-      setSummary([]);
       setStatus("error");
       setError(fetchError.message || "Không thể tải danh sách đơn hàng.");
     }
@@ -78,6 +77,22 @@ function OrdersPage() {
 
     return orders.filter((order) => {
       const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+
+      let matchesDate = true;
+      if (order.createdAt) {
+        const orderDate = new Date(order.createdAt);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (orderDate < start) matchesDate = false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (orderDate > end) matchesDate = false;
+        }
+      }
+
       const matchesKeyword =
         !keyword ||
         String(order.code || "").toLowerCase().includes(keyword) ||
@@ -86,9 +101,37 @@ function OrdersPage() {
         String(order.phone || "").toLowerCase().includes(keyword) ||
         String(order.item || "").toLowerCase().includes(keyword);
 
-      return matchesStatus && matchesKeyword;
+      return matchesStatus && matchesDate && matchesKeyword;
     });
-  }, [orders, searchKeyword, statusFilter]);
+  }, [orders, searchKeyword, statusFilter, startDate, endDate]);
+
+  const calculatedSummary = useMemo(() => {
+    const countByStatus = filteredOrders.reduce((acc, order) => {
+      const status = String(order.status || "").toUpperCase();
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const totalRevenue = filteredOrders
+      .filter((order) => String(order.status || "").toUpperCase() === "COMPLETED")
+      .reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+    const formatCurrencyVnd = (value) =>
+      new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(value);
+
+    return [
+      { label: "Tổng đơn hàng", value: String(filteredOrders.length) },
+      { label: "Chờ xác nhận", value: String(countByStatus.PENDING || 0) },
+      { label: "Đang xử lý", value: String(countByStatus.PROCESSING || 0) },
+      { label: "Đang giao", value: String(countByStatus.SHIPPING || 0) },
+      { label: "Hoàn tất", value: String(countByStatus.COMPLETED || 0) },
+      { label: "Doanh thu thực tế", value: formatCurrencyVnd(totalRevenue) },
+    ];
+  }, [filteredOrders]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PAGE_SIZE)),
@@ -102,7 +145,7 @@ function OrdersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchKeyword, statusFilter]);
+  }, [searchKeyword, statusFilter, startDate, endDate]);
 
   useEffect(() => {
     setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
@@ -176,16 +219,20 @@ function OrdersPage() {
       {status === "success" ? (
         <OrdersSection
           orders={paginatedOrders}
-          summary={summary}
+          summary={calculatedSummary}
           totalOrders={orders.length}
           filteredOrdersCount={filteredOrders.length}
           searchKeyword={searchKeyword}
           statusFilter={statusFilter}
+          startDate={startDate}
+          endDate={endDate}
           currentPage={currentPage}
           totalPages={totalPages}
           updatingOrderId={updatingOrderId}
           onSearchChange={setSearchKeyword}
           onStatusFilterChange={setStatusFilter}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
           onPageChange={setCurrentPage}
           onRefresh={loadOrders}
           onUpdateOrderStatus={handleUpdateOrderStatus}

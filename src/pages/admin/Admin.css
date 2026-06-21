@@ -215,22 +215,25 @@
 }
 
 .orders-admin-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   align-items: end;
 }
 
 .orders-admin-search {
-  max-width: none;
+  flex: 1 1 300px;
 }
 
-.orders-status-filter {
+.orders-status-filter,
+.orders-date-filter {
+  flex: 0 1 180px;
   display: grid;
   gap: 10px;
 }
 
-.orders-status-filter span {
+.orders-status-filter span,
+.orders-date-filter span {
   color: #efe6c0;
   font-size: 12px;
   font-weight: 700;
@@ -239,7 +242,8 @@
 }
 
 .orders-status-filter select,
-.orders-status-select {
+.orders-status-select,
+.orders-date-filter input[type="date"] {
   width: 100%;
   min-height: 46px;
   padding: 0 12px;
@@ -249,10 +253,12 @@
   color: #f7f2df;
   outline: none;
   font: inherit;
+  box-sizing: border-box;
 }
 
 .orders-status-filter select:focus,
-.orders-status-select:focus {
+.orders-status-select:focus,
+.orders-date-filter input[type="date"]:focus {
   border-color: rgba(244, 200, 75, 0.72);
   box-shadow: 0 0 0 3px rgba(244, 200, 75, 0.1);
 }
@@ -272,6 +278,24 @@
 .orders-refresh-button:hover {
   background: #f4c84b;
   color: #111111;
+}
+
+.orders-clear-date-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 120, 120, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 120, 120, 0.1);
+  color: #ffb4b4;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orders-clear-date-btn:hover {
+  background: rgba(255, 120, 120, 0.25);
+  color: #ffffff;
 }
 
 .orders-admin-table td {
