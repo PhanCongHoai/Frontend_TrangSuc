@@ -19,6 +19,22 @@ function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
+  const handleStartDateChange = (val) => {
+    if (val && endDate && new Date(val) > new Date(endDate)) {
+      alert("Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.");
+      return;
+    }
+    setStartDate(val);
+  };
+
+  const handleEndDateChange = (val) => {
+    if (val && startDate && new Date(startDate) > new Date(val)) {
+      alert("Ngày bắt đầu không được lớn hơn ngày kết thúc của bộ lọc.");
+      return;
+    }
+    setEndDate(val);
+  };
+
   const loadOrders = useCallback(async () => {
     try {
       setStatus("loading");
@@ -231,8 +247,8 @@ function OrdersPage() {
           updatingOrderId={updatingOrderId}
           onSearchChange={setSearchKeyword}
           onStatusFilterChange={setStatusFilter}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
+          onStartDateChange={handleStartDateChange}
+          onEndDateChange={handleEndDateChange}
           onPageChange={setCurrentPage}
           onRefresh={loadOrders}
           onUpdateOrderStatus={handleUpdateOrderStatus}
