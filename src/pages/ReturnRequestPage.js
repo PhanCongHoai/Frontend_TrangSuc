@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./footer/Footer";
@@ -55,7 +55,7 @@ function ReturnRequestPage() {
   }, [currentUser]);
 
   // Load return requests history
-  const loadReturns = async () => {
+  const loadReturns = useCallback(async () => {
     if (!currentUser) return;
     try {
       setLoadingReturns(true);
@@ -71,11 +71,11 @@ function ReturnRequestPage() {
     } finally {
       setLoadingReturns(false);
     }
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     loadReturns();
-  }, [currentUser]);
+  }, [currentUser, loadReturns]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

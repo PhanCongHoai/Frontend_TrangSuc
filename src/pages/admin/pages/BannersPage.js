@@ -10,15 +10,6 @@ const initialForm = {
   imageUrls: [],
 };
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Không thể đọc tệp ảnh banner."));
-    reader.readAsDataURL(file);
-  });
-}
-
 function BannersPage() {
   const [form, setForm] = useState(initialForm);
   const [banners, setBanners] = useState([]);
