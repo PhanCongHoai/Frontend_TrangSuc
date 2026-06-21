@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AiAdvisorWidget.css";
 import { buildApiUrl } from "../utils/api";
+import { getAuthHeaders } from "../utils/auth";
 
 const AI_CHAT_API = buildApiUrl("/api/ai-chat");
 
@@ -74,8 +75,55 @@ function AiAdvisorWidget({ isOpen, onClose }) {
   ]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState("");
   const listRef = useRef(null);
+
+  // Load chat history from SQL Server on widget open
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const loadHistory = async () => {
+      try {
+        setLoadingHistory(true);
+        setError("");
+        const response = await fetch(`${AI_CHAT_API}/history`, {
+          method: "GET",
+          headers: getAuthHeaders(),
+        });
+        const data = await response.json();
+
+        if (response.ok && data.success && Array.isArray(data.data)) {
+          if (data.data.length > 0) {
+            const mapped = data.data.map((msg, index) => ({
+              id: `db-${index}-${Date.now()}`,
+              role: msg.role,
+              content: msg.content,
+            }));
+            setMessages(mapped);
+          } else {
+            // Reset to greeting if DB history is empty
+            setMessages([
+              {
+                id: "greeting",
+                role: "assistant",
+                content: "Xin chào, mình là AI tư vấn JewelryBook. Bạn muốn chọn trang sức cho dịp nào?",
+              },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.error("Loi khi tai lich su chat AI:", err);
+        setError("Không thể tải lịch sử cuộc trò chuyện.");
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !listRef.current) {
@@ -83,7 +131,7 @@ function AiAdvisorWidget({ isOpen, onClose }) {
     }
 
     listRef.current.scrollTop = listRef.current.scrollHeight;
-  }, [isOpen, messages]);
+  }, [isOpen, messages, loadingHistory, sending]);
 
   const handleSend = async (event) => {
     event.preventDefault();
@@ -114,9 +162,9 @@ function AiAdvisorWidget({ isOpen, onClose }) {
 
       const response = await fetch(`${AI_CHAT_API}/ask`, {
         method: "POST",
-        headers: {
+        headers: getAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           message: question,
           history,
@@ -143,6 +191,37 @@ function AiAdvisorWidget({ isOpen, onClose }) {
     }
   };
 
+  const handleClearHistory = async () => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện với AI tư vấn?")) {
+      try {
+        setSending(true);
+        setError("");
+        const response = await fetch(`${AI_CHAT_API}/history`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Không thể xóa lịch sử chat.");
+        }
+
+        setMessages([
+          {
+            id: "greeting",
+            role: "assistant",
+            content: "Xin chào, mình là AI tư vấn JewelryBook. Bạn muốn chọn trang sức cho dịp nào?",
+          },
+        ]);
+      } catch (err) {
+        console.error("Loi khi xoa lich su chat AI:", err);
+        setError(err.message || "Lỗi khi xóa lịch sử trò chuyện.");
+      } finally {
+        setSending(false);
+      }
+    }
+  };
+
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -160,23 +239,50 @@ function AiAdvisorWidget({ isOpen, onClose }) {
             <span>Gợi ý trang sức theo nhu cầu của bạn</span>
           </div>
         </div>
-        <button type="button" className="ai-chat-close" onClick={onClose} aria-label="Đóng">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: "16px", height: "16px" }}>
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <div className="ai-chat-header-actions">
+          <button
+            type="button"
+            className="ai-chat-clear-btn"
+            onClick={handleClearHistory}
+            title="Xóa lịch sử trò chuyện"
+            aria-label="Xóa lịch sử trò chuyện"
+            disabled={sending || loadingHistory || messages.length <= 1}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: "15px", height: "15px" }}>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+          <button type="button" className="ai-chat-close" onClick={onClose} aria-label="Đóng">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: "16px", height: "16px" }}>
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="ai-chat-body" ref={listRef}>
-        {messages.map((message) => (
-          <div key={message.id} className={`ai-chat-row ${message.role}`}>
-            <div className={`ai-chat-bubble ${message.role}`}>
-              <p>{renderMessageContent(message.content)}</p>
+        {loadingHistory ? (
+          <div className="ai-chat-row assistant">
+            <div className="ai-chat-bubble assistant typing">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
             </div>
           </div>
-        ))}
-        {sending && (
+        ) : (
+          messages.map((message) => (
+            <div key={message.id} className={`ai-chat-row ${message.role}`}>
+              <div className={`ai-chat-bubble ${message.role}`}>
+                <p>{renderMessageContent(message.content)}</p>
+              </div>
+            </div>
+          ))
+        )}
+        {sending && !loadingHistory && (
           <div className="ai-chat-row assistant">
             <div className="ai-chat-bubble assistant typing">
               <span className="dot"></span>

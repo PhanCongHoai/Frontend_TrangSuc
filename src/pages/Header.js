@@ -303,6 +303,8 @@ function Header() {
     clearAuthSession();
     setIsMobileMenuOpen(false);
     setIsProfileCardOpen(false);
+    setIsAiChatOpen(false);
+    setIsChatOpen(false);
     setCurrentUser(null);
     navigate("/", { replace: true });
   };
@@ -587,14 +589,16 @@ function Header() {
         onClose={() => setIsChatOpen(false)}
         onMessagesSeen={handleChatMessagesSeen}
       />
-      <button
-        type="button"
-        className="ai-chat-fab"
-        aria-label="Mở tư vấn AI"
-        onClick={handleOpenAiChat}
-      >
-        <AiChatIcon className="ai-chat-fab-icon" />
-      </button>
+      {currentUser && (
+        <button
+          type="button"
+          className="ai-chat-fab"
+          aria-label="Mở tư vấn AI"
+          onClick={handleOpenAiChat}
+        >
+          <AiChatIcon className="ai-chat-fab-icon" />
+        </button>
+      )}
       <AiAdvisorWidget isOpen={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
     </>
   );
