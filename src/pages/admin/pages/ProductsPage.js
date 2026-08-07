@@ -10,7 +10,31 @@ import {
 } from "../../../utils/productSync";
 
 const ADMIN_PAGE_SIZE = 10;
-const initialForm = { categoryId: "", name: "", description: "", materialType: "", baseWeight: "", status: "ACTIVE", variants: [], mainImageUrl: "", laborCost: "", stoneCost: "", markupRate: "", priceTiers: [] };
+const initialForm = {
+  categoryId: "",
+  name: "",
+  description: "",
+  materialType: "",
+  baseWeight: "",
+  status: "ACTIVE",
+  variants: [],
+  mainImageUrl: "",
+  laborCost: "",
+  stoneCost: "",
+  markupRate: "",
+  priceTiers: [],
+  mainMaterial: "",
+  materialPurity: "",
+  primaryColor: "",
+  mainGemstone: "",
+  gemstoneSize: "",
+  gemstoneShape: "",
+  sideGemstone: "",
+  gender: "",
+  collection: "",
+  origin: "",
+  warrantyMonths: 12,
+};
 
 function formatCurrency(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
@@ -225,6 +249,17 @@ function buildFormFromProduct(product) {
           : String(tier.maxQuantity || tier.max_quantity || ""),
       markupRate: String(tier.markupRate ?? tier.markup_rate ?? ""),
     })),
+    mainMaterial: product.attributes?.mainMaterial || "",
+    materialPurity: product.attributes?.materialPurity || "",
+    primaryColor: product.attributes?.primaryColor || "",
+    mainGemstone: product.attributes?.mainGemstone || "",
+    gemstoneSize: product.attributes?.gemstoneSize || "",
+    gemstoneShape: product.attributes?.gemstoneShape || "",
+    sideGemstone: product.attributes?.sideGemstone || "",
+    gender: product.attributes?.gender || "",
+    collection: product.attributes?.collection || "",
+    origin: product.attributes?.origin || "",
+    warrantyMonths: product.attributes?.warrantyMonths !== undefined && product.attributes?.warrantyMonths !== null ? Number(product.attributes?.warrantyMonths) : 12,
   };
 }
 
@@ -710,6 +745,17 @@ function ProductsPage() {
           stone_cost: Number(form.stoneCost || 0),
           markup_rate: Number(form.markupRate || 0),
           price_tiers: normalizeFormPriceTiers(form.priceTiers),
+          main_material: form.mainMaterial ? form.mainMaterial.trim() : "",
+          material_purity: form.materialPurity ? form.materialPurity.trim() : "",
+          primary_color: form.primaryColor ? form.primaryColor.trim() : "",
+          main_gemstone: form.mainGemstone ? form.mainGemstone.trim() : "",
+          gemstone_size: form.gemstoneSize ? form.gemstoneSize.trim() : "",
+          gemstone_shape: form.gemstoneShape ? form.gemstoneShape.trim() : "",
+          side_gemstone: form.sideGemstone ? form.sideGemstone.trim() : "",
+          gender: form.gender ? form.gender.trim() : "",
+          collection: form.collection ? form.collection.trim() : "",
+          origin: form.origin ? form.origin.trim() : "",
+          warranty_months: form.warrantyMonths !== undefined && form.warrantyMonths !== "" ? Number(form.warrantyMonths) : 12,
         }),
       });
       const data = await response.json();
@@ -956,6 +1002,60 @@ function ProductsPage() {
                   </small>
                 </label>
                 {form.mainImageUrl ? <div className="product-image-preview category-form-field category-form-field-wide"><span>Xem trước ảnh</span><div className="product-image-preview-card"><img src={form.mainImageUrl} alt={form.name || "Ảnh sản phẩm"} /></div></div> : null}
+                
+                {/* Thông số kỹ thuật sản phẩm (Thuộc tính cứng) */}
+                <div className="product-attributes-editor category-form-field category-form-field-wide">
+                  <div className="product-tier-editor-head" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '8px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#e1af30' }}>Thông số kỹ thuật sản phẩm (Thuộc tính cứng)</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px 20px' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Chất liệu chính</span>
+                      <input type="text" value={form.mainMaterial} onChange={(event) => handleChange("mainMaterial", event.target.value)} placeholder="VD: Vàng, Bạc, Bạch kim..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Hàm lượng / Độ tinh khiết</span>
+                      <input type="text" value={form.materialPurity} onChange={(event) => handleChange("materialPurity", event.target.value)} placeholder="VD: 18K (75%), Pt950..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Màu sắc chủ đạo</span>
+                      <input type="text" value={form.primaryColor} onChange={(event) => handleChange("primaryColor", event.target.value)} placeholder="VD: Trắng, Vàng hồng..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Đá/Ngọc chính</span>
+                      <input type="text" value={form.mainGemstone} onChange={(event) => handleChange("mainGemstone", event.target.value)} placeholder="VD: Kim cương, CZ, Ngọc trai..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Kích thước đá chính</span>
+                      <input type="text" value={form.gemstoneSize} onChange={(event) => handleChange("gemstoneSize", event.target.value)} placeholder="VD: 4.5 mm, 6.0 mm..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Hình dáng đá chính</span>
+                      <input type="text" value={form.gemstoneShape} onChange={(event) => handleChange("gemstoneShape", event.target.value)} placeholder="VD: Tròn, Oval, Trái tim..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Đá/Ngọc phụ</span>
+                      <input type="text" value={form.sideGemstone} onChange={(event) => handleChange("sideGemstone", event.target.value)} placeholder="VD: CZ tấm, Kim cương tấm..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Đối tượng sử dụng</span>
+                      <input type="text" value={form.gender} onChange={(event) => handleChange("gender", event.target.value)} placeholder="VD: Nữ, Nam, Cặp đôi..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Bộ sưu tập</span>
+                      <input type="text" value={form.collection} onChange={(event) => handleChange("collection", event.target.value)} placeholder="VD: Wedding Collection..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Xuất xứ</span>
+                      <input type="text" value={form.origin} onChange={(event) => handleChange("origin", event.target.value)} placeholder="VD: Việt Nam, Ý..." disabled={isViewMode} />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>Bảo hành (tháng)</span>
+                      <input type="text" inputMode="numeric" value={form.warrantyMonths} onChange={(event) => handleChange("warrantyMonths", event.target.value.replace(/[^\d]/g, ""))} placeholder="VD: 12" disabled={isViewMode} />
+                    </label>
+                  </div>
+                </div>
+
                 <div className="product-price-preview category-form-field category-form-field-wide"><span>Giá tạm tính</span><div className="product-price-preview-card"><strong>{formatCurrency(estimatedSalePrice)}</strong><p>Giá vật liệu hiện tại: {formatCurrency(selectedMaterialOption?.base_sell_price || 0)} / đơn vị</p><p>Hệ thống tự tính từ giá vàng mới nhất, khối lượng gốc, chi phí công, chi phí đá và markup.</p></div></div>
               </div>
               {submitMessage ? <div className="category-form-message success">{submitMessage}</div> : null}

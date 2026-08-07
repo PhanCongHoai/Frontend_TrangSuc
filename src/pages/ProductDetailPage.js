@@ -125,9 +125,9 @@ function ProductDetailPage() {
 
   const scrollCarousel = (direction) => {
     if (carouselRef.current) {
-      const scrollAmount = 300; // approximate width of item card
+      const containerWidth = carouselRef.current.clientWidth;
       carouselRef.current.scrollBy({
-        left: direction * scrollAmount,
+        left: direction * (containerWidth - 40),
         behavior: "smooth"
       });
     }
@@ -991,6 +991,83 @@ function ProductDetailPage() {
               </div> : null}
             </div>
 
+            {product.attributes && (
+              <section className="product-attributes-section">
+                <div className="product-section-heading">
+                  <p>Thông số sản phẩm</p>
+                  <h2>Thông tin chi tiết kỹ thuật</h2>
+                </div>
+                <div className="product-attributes-grid">
+                  {product.attributes.mainMaterial && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Chất liệu chính:</span>
+                      <span className="product-attr-val">{product.attributes.mainMaterial}</span>
+                    </div>
+                  )}
+                  {product.attributes.materialPurity && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Hàm lượng/Độ tinh khiết:</span>
+                      <span className="product-attr-val">{product.attributes.materialPurity}</span>
+                    </div>
+                  )}
+                  {product.attributes.primaryColor && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Màu sắc chủ đạo:</span>
+                      <span className="product-attr-val">{product.attributes.primaryColor}</span>
+                    </div>
+                  )}
+                  {product.attributes.mainGemstone && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Đá/Ngọc chính:</span>
+                      <span className="product-attr-val">{product.attributes.mainGemstone}</span>
+                    </div>
+                  )}
+                  {product.attributes.gemstoneSize && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Kích thước đá chính:</span>
+                      <span className="product-attr-val">{product.attributes.gemstoneSize}</span>
+                    </div>
+                  )}
+                  {product.attributes.gemstoneShape && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Hình dáng đá chính:</span>
+                      <span className="product-attr-val">{product.attributes.gemstoneShape}</span>
+                    </div>
+                  )}
+                  {product.attributes.sideGemstone && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Đá/Ngọc phụ:</span>
+                      <span className="product-attr-val">{product.attributes.sideGemstone}</span>
+                    </div>
+                  )}
+                  {product.attributes.gender && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Đối tượng sử dụng:</span>
+                      <span className="product-attr-val">{product.attributes.gender}</span>
+                    </div>
+                  )}
+                  {product.attributes.collection && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Bộ sưu tập:</span>
+                      <span className="product-attr-val">{product.attributes.collection}</span>
+                    </div>
+                  )}
+                  {product.attributes.origin && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Xuất xứ:</span>
+                      <span className="product-attr-val">{product.attributes.origin}</span>
+                    </div>
+                  )}
+                  {product.attributes.warrantyMonths !== null && (
+                    <div className="product-attribute-item">
+                      <span className="product-attr-label">Bảo hành:</span>
+                      <span className="product-attr-val">{product.attributes.warrantyMonths} tháng</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
             <section className="product-review-section">
               <article className="product-info-card product-review-card">
                 <div className="product-section-heading">
@@ -1202,82 +1279,7 @@ function ProductDetailPage() {
           </div>
         </section>
 
-        {product.attributes && (
-          <section className="product-attributes-section">
-            <div className="product-section-heading">
-              <p>Thông số sản phẩm</p>
-              <h2>Thông tin chi tiết kỹ thuật</h2>
-            </div>
-            <div className="product-attributes-grid">
-              {product.attributes.mainMaterial && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Chất liệu chính:</span>
-                  <span className="product-attr-val">{product.attributes.mainMaterial}</span>
-                </div>
-              )}
-              {product.attributes.materialPurity && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Hàm lượng/Độ tinh khiết:</span>
-                  <span className="product-attr-val">{product.attributes.materialPurity}</span>
-                </div>
-              )}
-              {product.attributes.primaryColor && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Màu sắc chủ đạo:</span>
-                  <span className="product-attr-val">{product.attributes.primaryColor}</span>
-                </div>
-              )}
-              {product.attributes.mainGemstone && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Đá/Ngọc chính:</span>
-                  <span className="product-attr-val">{product.attributes.mainGemstone}</span>
-                </div>
-              )}
-              {product.attributes.gemstoneSize && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Kích thước đá chính:</span>
-                  <span className="product-attr-val">{product.attributes.gemstoneSize}</span>
-                </div>
-              )}
-              {product.attributes.gemstoneShape && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Hình dáng đá chính:</span>
-                  <span className="product-attr-val">{product.attributes.gemstoneShape}</span>
-                </div>
-              )}
-              {product.attributes.sideGemstone && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Đá/Ngọc phụ:</span>
-                  <span className="product-attr-val">{product.attributes.sideGemstone}</span>
-                </div>
-              )}
-              {product.attributes.gender && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Đối tượng sử dụng:</span>
-                  <span className="product-attr-val">{product.attributes.gender}</span>
-                </div>
-              )}
-              {product.attributes.collection && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Bộ sưu tập:</span>
-                  <span className="product-attr-val">{product.attributes.collection}</span>
-                </div>
-              )}
-              {product.attributes.origin && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Xuất xứ:</span>
-                  <span className="product-attr-val">{product.attributes.origin}</span>
-                </div>
-              )}
-              {product.attributes.warrantyMonths !== null && (
-                <div className="product-attribute-item">
-                  <span className="product-attr-label">Bảo hành:</span>
-                  <span className="product-attr-val">{product.attributes.warrantyMonths} tháng</span>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+
 
         {relatedProducts.length > 0 && (
           <section className="product-related-section">
