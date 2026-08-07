@@ -199,6 +199,7 @@ function CheckoutPage() {
   const [orderNote, setOrderNote] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
   const [countdownSeconds, setCountdownSeconds] = useState(null);
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [addressError, setAddressError] = useState("");
   const [shippingError, setShippingError] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -499,6 +500,12 @@ function CheckoutPage() {
   const isPrepaidOrder = placedOrder?.payment?.method === "prepaid";
   const isPaymentConfirmed =
     String(placedOrder?.payment?.status || "").trim().toUpperCase() === "PAID";
+
+  useEffect(() => {
+    if (isPaymentConfirmed) {
+      setShowPaymentSuccessModal(true);
+    }
+  }, [isPaymentConfirmed]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -1206,24 +1213,14 @@ function CheckoutPage() {
           <section className="checkout-empty-state checkout-success-state">
             {isPrepaidOrder ? (
               <div className="checkout-payment-success">
-                <div
-                  className={`checkout-payment-status ${
-                    isPaymentConfirmed
-                      ? "checkout-payment-status-success"
-                      : "checkout-payment-status-pending"
-                  }`}
-                >
-                  <strong>
-                    {isPaymentConfirmed
-                      ? "Đã nhận thanh toán từ SePay"
-                      : "Đang chờ SePay xác nhận thanh toán"}
-                  </strong>
-                  <p>
-                    {isPaymentConfirmed
-                      ? "Hệ thống đã tự động đối soát và cập nhật đơn hàng thành công."
-                      : "Màn hình này sẽ tự làm mới. Khi SePay gửi webhook thành công, trạng thái sẽ đổi sang đã thanh toán."}
-                  </p>
-                </div>
+                {!isPaymentConfirmed && (
+                  <div className="checkout-payment-status checkout-payment-status-pending">
+                    <strong>Đang chờ SePay xác nhận thanh toán</strong>
+                    <p>
+                      Màn hình này sẽ tự làm mới. Khi SePay gửi webhook thành công, trạng thái sẽ đổi sang đã thanh toán.
+                    </p>
+                  </div>
+                )}
                 <p className="checkout-kicker">
                   {isPaymentConfirmed ? "Thanh toán thành công" : "Chờ thanh toán"}
                 </p>
@@ -1374,6 +1371,60 @@ function CheckoutPage() {
           </section>
         </main>
         <Footer />
+        {showPaymentSuccessModal && (
+          <div className="payment-success-modal-overlay">
+            <div className="payment-success-modal-container">
+              <div className="payment-success-modal-header">
+                <div className="payment-success-icon-wrapper">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#2ecc71" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+                <h2>Đã nhận thanh toán từ SePay</h2>
+              </div>
+              <div className="payment-success-modal-body">
+                <p className="payment-success-modal-desc">
+                  Hệ thống đã tự động đối soát và cập nhật đơn hàng thành công.
+                </p>
+                <div className="payment-success-modal-details">
+                  {placedOrder.internalOrderCode && (
+                    <div className="payment-modal-row">
+                      <span>Mã đơn nội bộ:</span>
+                      <strong>{placedOrder.internalOrderCode}</strong>
+                    </div>
+                  )}
+                  {placedOrder.payment.amount && (
+                    <div className="payment-modal-row">
+                      <span>Số tiền thanh toán:</span>
+                      <strong className="payment-success-amount">{formatCurrency(placedOrder.payment.amount)}</strong>
+                    </div>
+                  )}
+                  {placedOrder.payment.sepayTransactionId && (
+                    <div className="payment-modal-row">
+                      <span>Mã giao dịch SePay:</span>
+                      <strong>{placedOrder.payment.sepayTransactionId}</strong>
+                    </div>
+                  )}
+                  {placedOrder.payment.paidAt && (
+                    <div className="payment-modal-row">
+                      <span>Thời gian xác nhận:</span>
+                      <strong>{placedOrder.payment.paidAt}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="payment-success-modal-footer">
+                <button 
+                  type="button" 
+                  className="payment-success-modal-close-btn"
+                  onClick={() => setShowPaymentSuccessModal(false)}
+                >
+                  Đồng ý
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
