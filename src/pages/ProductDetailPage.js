@@ -120,6 +120,24 @@ function ProductDetailPage() {
   const reviewTextareaRef = useRef(null);
   const reviewRefreshInFlightRef = useRef(false);
 
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const carouselRef = useRef(null);
+
+  const scrollCarousel = (direction) => {
+    if (carouselRef.current) {
+      const scrollAmount = 300; // approximate width of item card
+      carouselRef.current.scrollBy({
+        left: direction * scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const handleRelatedClick = (productId) => {
+    navigate(`/products/${productId}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const showToast = useCallback((message, type = "info") => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
@@ -280,6 +298,23 @@ function ProductDetailPage() {
       isMounted = false;
     };
   }, [fetchProductDetail, id]);
+
+  useEffect(() => {
+    if (!product?.category?.name) return;
+    const fetchRelated = async () => {
+      try {
+        const res = await fetch(buildApiUrl(`/api/products?category=${encodeURIComponent(product.category.name)}&limit=12`));
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.products)) {
+          // Lọc bỏ sản phẩm hiện tại
+          setRelatedProducts(data.products.filter(p => Number(p.id) !== Number(product.id)));
+        }
+      } catch (err) {
+        console.error("Lỗi tải sản phẩm liên quan:", err);
+      }
+    };
+    fetchRelated();
+  }, [product?.id, product?.category?.name]);
 
   useEffect(() => {
     if (!product?.id) {
@@ -1166,6 +1201,131 @@ function ProductDetailPage() {
             </div>
           </div>
         </section>
+
+        {product.attributes && (
+          <section className="product-attributes-section">
+            <div className="product-section-heading">
+              <p>Thông số sản phẩm</p>
+              <h2>Thông tin chi tiết kỹ thuật</h2>
+            </div>
+            <div className="product-attributes-grid">
+              {product.attributes.mainMaterial && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Chất liệu chính:</span>
+                  <span className="product-attr-val">{product.attributes.mainMaterial}</span>
+                </div>
+              )}
+              {product.attributes.materialPurity && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Hàm lượng/Độ tinh khiết:</span>
+                  <span className="product-attr-val">{product.attributes.materialPurity}</span>
+                </div>
+              )}
+              {product.attributes.primaryColor && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Màu sắc chủ đạo:</span>
+                  <span className="product-attr-val">{product.attributes.primaryColor}</span>
+                </div>
+              )}
+              {product.attributes.mainGemstone && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Đá/Ngọc chính:</span>
+                  <span className="product-attr-val">{product.attributes.mainGemstone}</span>
+                </div>
+              )}
+              {product.attributes.gemstoneSize && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Kích thước đá chính:</span>
+                  <span className="product-attr-val">{product.attributes.gemstoneSize}</span>
+                </div>
+              )}
+              {product.attributes.gemstoneShape && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Hình dáng đá chính:</span>
+                  <span className="product-attr-val">{product.attributes.gemstoneShape}</span>
+                </div>
+              )}
+              {product.attributes.sideGemstone && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Đá/Ngọc phụ:</span>
+                  <span className="product-attr-val">{product.attributes.sideGemstone}</span>
+                </div>
+              )}
+              {product.attributes.gender && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Đối tượng sử dụng:</span>
+                  <span className="product-attr-val">{product.attributes.gender}</span>
+                </div>
+              )}
+              {product.attributes.collection && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Bộ sưu tập:</span>
+                  <span className="product-attr-val">{product.attributes.collection}</span>
+                </div>
+              )}
+              {product.attributes.origin && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Xuất xứ:</span>
+                  <span className="product-attr-val">{product.attributes.origin}</span>
+                </div>
+              )}
+              {product.attributes.warrantyMonths !== null && (
+                <div className="product-attribute-item">
+                  <span className="product-attr-label">Bảo hành:</span>
+                  <span className="product-attr-val">{product.attributes.warrantyMonths} tháng</span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {relatedProducts.length > 0 && (
+          <section className="product-related-section">
+            <div className="product-section-heading">
+              <p>Gợi ý mua sắm</p>
+              <h2>Sản phẩm liên quan</h2>
+            </div>
+            <div className="product-related-carousel-wrapper">
+              <button 
+                type="button" 
+                className="carousel-control prev" 
+                onClick={() => scrollCarousel(-1)}
+                aria-label="Slide trước"
+              >
+                ‹
+              </button>
+              <div className="product-related-carousel" ref={carouselRef}>
+                {relatedProducts.map((p) => (
+                  <div key={p.id} className="related-product-card" onClick={() => handleRelatedClick(p.id)}>
+                    <div className="related-product-image-wrapper">
+                      {p.image ? (
+                        <img src={buildAssetUrl(p.image)} alt={p.name} loading="lazy" />
+                      ) : (
+                        <div className="related-product-image-empty">Không có ảnh</div>
+                      )}
+                      {p.badge && <span className="related-product-badge">{p.badge}</span>}
+                    </div>
+                    <div className="related-product-info">
+                      <span className="related-product-category">{p.category}</span>
+                      <h3 className="related-product-name">{p.name}</h3>
+                      <div className="related-product-footer">
+                        <strong className="related-product-price">{p.price}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button 
+                type="button" 
+                className="carousel-control next" 
+                onClick={() => scrollCarousel(1)}
+                aria-label="Slide sau"
+              >
+                ›
+              </button>
+            </div>
+          </section>
+        )}
       </main>
 
       {toast.show ? (
