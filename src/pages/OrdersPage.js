@@ -201,6 +201,13 @@ function OrdersPage() {
   const canCancelOrder = (order) => {
     const status = String(order.status || "").trim().toUpperCase();
     const shippingStatus = String(order.shippingStatus || "").trim().toUpperCase();
+    const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
+    const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
+
+    if (paymentMethod === "prepaid" && paymentStatus === "PAID") {
+      return false;
+    }
+
     return (
       !["CANCELLED", "COMPLETED"].includes(status) &&
       ["PENDING", "READY_TO_PICK", ""].includes(shippingStatus)
