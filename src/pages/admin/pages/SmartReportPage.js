@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../../utils/api";
 import { getAuthHeaders } from "../../../utils/auth";
 import "./SmartReportPage.css";
