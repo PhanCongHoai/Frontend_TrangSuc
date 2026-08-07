@@ -138,6 +138,12 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 function normalizeOrderStatus(status) {
   const normalized = String(status || "").trim().toUpperCase();
 
@@ -288,6 +294,7 @@ function OrdersPage() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [authExpired, setAuthExpired] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [expandedOrderPaymentInfo, setExpandedOrderPaymentInfo] = useState({});
 
   useEffect(() => {
     if (!currentUser) {
@@ -344,6 +351,71 @@ function OrdersPage() {
       ignore = true;
     };
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!expandedOrderId) return;
+    const order = orders.find(o => o.id === expandedOrderId);
+    if (!order) return;
+    const isPrepaid = String(order.paymentMethod || "").trim().toUpperCase() === "PREPAID";
+    const isUnpaid = ["UNPAID", "PENDING"].includes(String(order.paymentStatus || "").trim().toUpperCase());
+    
+    if (isPrepaid && isUnpaid) {
+      let ignore = false;
+      const fetchPaymentInfo = async () => {
+        try {
+          const response = await fetch(`${ORDERS_API}/${expandedOrderId}/payment-status`, {
+            headers: getAuthHeaders(),
+          });
+          const data = await response.json();
+          if (!ignore && data.success && data.data) {
+            setExpandedOrderPaymentInfo(prev => ({
+              ...prev,
+              [expandedOrderId]: data.data.payment
+            }));
+            
+            // Nếu đơn hàng đã được cập nhật thành PAID từ backend, reload toàn bộ đơn hàng
+            if (String(data.data.payment?.status || "").trim().toUpperCase() === "PAID") {
+              const ordersRes = await fetch(`${ORDERS_API}/my`, { headers: getAuthHeaders() });
+              const ordersData = await ordersRes.json();
+              if (ordersData.success && Array.isArray(ordersData.data)) {
+                setOrders(ordersData.data);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải thông tin thanh toán:", err);
+        }
+      };
+      
+      fetchPaymentInfo();
+      const timer = setInterval(fetchPaymentInfo, 4000);
+      return () => {
+        ignore = true;
+        clearInterval(timer);
+      };
+    }
+  }, [expandedOrderId, orders]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setExpandedOrderPaymentInfo(prev => {
+        const next = { ...prev };
+        let changed = false;
+        Object.keys(next).forEach(orderId => {
+          const info = next[orderId];
+          if (info && info.remainingSeconds !== undefined && info.remainingSeconds > 0) {
+            next[orderId] = {
+              ...info,
+              remainingSeconds: info.remainingSeconds - 1
+            };
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -813,6 +885,104 @@ function OrdersPage() {
                             </div>
                           </div>
                         </div>
+
+                        {/* QR Code and Countdown Timer Block */}
+                        {(() => {
+                          const isPrepaid = String(order.paymentMethod || "").trim().toUpperCase() === "PREPAID";
+                          const isUnpaid = ["UNPAID", "PENDING"].includes(String(order.paymentStatus || "").trim().toUpperCase());
+                          const info = expandedOrderPaymentInfo[order.id];
+                          if (!isPrepaid || !isUnpaid || !info) return null;
+
+                          return (
+                            <div className="orders-payment-qr-block" style={{
+                              background: "rgba(255, 255, 255, 0.02)",
+                              border: "1px dashed rgba(212, 175, 55, 0.4)",
+                              borderRadius: "12px",
+                              padding: "20px",
+                              marginBottom: "20px",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "15px",
+                              textAlign: "center"
+                            }}>
+                              <h4 style={{ color: "#d4af37", margin: 0, fontSize: "16px", fontWeight: "700" }}>
+                                Đơn hàng đang chờ thanh toán chuyển khoản trước
+                              </h4>
+                              
+                              {info.remainingSeconds !== undefined && (
+                                <div style={{
+                                  fontSize: "14px",
+                                  fontWeight: "600",
+                                  color: info.remainingSeconds > 0 ? "#d4af37" : "#e05252",
+                                  background: info.remainingSeconds > 0 ? "rgba(212, 175, 55, 0.1)" : "rgba(224, 82, 82, 0.1)",
+                                  padding: "8px 16px",
+                                  borderRadius: "20px"
+                                }}>
+                                  {info.remainingSeconds > 0 ? (
+                                    <span>Thời gian còn lại để thanh toán: {formatTime(info.remainingSeconds)}</span>
+                                  ) : (
+                                    <span>Đơn hàng đã hết hạn thanh toán (Quá 3 phút) và sẽ tự hủy.</span>
+                                  )}
+                                </div>
+                              )}
+
+                              {info.remainingSeconds > 0 && info.qrCodeUrl ? (
+                                <>
+                                  <div style={{
+                                    background: "#fff",
+                                    padding: "10px",
+                                    borderRadius: "10px",
+                                    boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+                                  }}>
+                                    <img 
+                                      src={info.qrCodeUrl} 
+                                      alt="QR thanh toán chuyển khoản"
+                                      style={{ width: "180px", height: "180px", display: "block" }}
+                                    />
+                                  </div>
+                                  <div style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr",
+                                    gap: "8px",
+                                    maxWidth: "400px",
+                                    width: "100%",
+                                    fontSize: "13px",
+                                    background: "rgba(255,255,255,0.03)",
+                                    padding: "15px",
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(255,255,255,0.05)",
+                                    textAlign: "left"
+                                  }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span style={{ color: "#aaa" }}>Ngân hàng:</span>
+                                      <strong>{info.bankName || info.bankCode || "VPBank"}</strong>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span style={{ color: "#aaa" }}>Số tài khoản ảo:</span>
+                                      <strong>{info.accountNumber || "N/A"}</strong>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span style={{ color: "#aaa" }}>Chủ tài khoản:</span>
+                                      <strong>{info.accountHolderName || "N/A"}</strong>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span style={{ color: "#aaa" }}>Số tiền:</span>
+                                      <strong style={{ color: "#d4af37" }}>{formatCurrency(info.amount || order.total || 0)}</strong>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span style={{ color: "#aaa" }}>Nội dung chuyển khoản:</span>
+                                      <strong>{info.transferContent || "N/A"}</strong>
+                                    </div>
+                                  </div>
+                                  <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
+                                    Quét mã QR bằng ứng dụng ngân hàng của bạn. Hệ thống sẽ tự động xác nhận đơn hàng sau khi bạn chuyển khoản thành công.
+                                  </p>
+                                </>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
 
                         {/* Order Items Table */}
                         <div className="orders-details-products-box">

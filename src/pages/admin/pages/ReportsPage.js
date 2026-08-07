@@ -73,6 +73,15 @@ function ReportsPage() {
   const [chartType, setChartType] = useState("line"); // "line" | "bar"
   const [sortConfig, setSortConfig] = useState({ key: "bucket", direction: "asc" });
 
+  // AI Restock & DWH forecasting states
+  const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "forecast"
+  const [forecastData, setForecastData] = useState([]);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState("");
+  const [forecastSearch, setForecastSearch] = useState("");
+  const [forecastFilter, setForecastFilter] = useState("ALL"); // ALL, RESTOCK, SLOW_MOVING, STABLE
+  const [syncingEtl, setSyncingEtl] = useState(false);
+
   const yearOptions = useMemo(() => {
     const years = [];
     for (let year = currentDate.year + 1; year >= currentDate.year - 6; year -= 1) {
@@ -195,8 +204,84 @@ function ReportsPage() {
   }, [filters.month, filters.period, filters.year, navigate]);
 
   useEffect(() => {
-    loadReport();
-  }, [loadReport]);
+    if (activeTab === "revenue") {
+      loadReport();
+    }
+  }, [loadReport, activeTab]);
+
+  const loadForecast = useCallback(async () => {
+    try {
+      setForecastLoading(true);
+      setForecastError("");
+      const response = await fetch(buildApiUrl("/api/forecast/ai-report"), {
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      if (response.status === 401 || response.status === 403) {
+        clearAuthSession();
+        navigate("/login", { replace: true, state: { adminOnly: true } });
+        return;
+      }
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Không thể tải báo cáo dự báo AI.");
+      }
+      setForecastData(data.data || []);
+    } catch (err) {
+      setForecastError(err.message || "Lỗi tải báo cáo dự báo.");
+    } finally {
+      setForecastLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (activeTab === "forecast") {
+      loadForecast();
+    }
+  }, [activeTab, loadForecast]);
+
+  const handleSyncEtl = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn chạy tiến trình ETL đồng bộ toàn bộ dữ liệu giao dịch sang kho phân tích DWH ngay bây giờ?")) {
+      return;
+    }
+    try {
+      setSyncingEtl(true);
+      const response = await fetch(buildApiUrl("/api/forecast/sync-etl"), {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Đồng bộ ETL kho dữ liệu thất bại.");
+      }
+      alert("Đồng bộ dữ liệu sang kho phân tích DWH thành công!");
+      loadForecast();
+    } catch (err) {
+      alert("Lỗi đồng bộ ETL: " + err.message);
+    } finally {
+      setSyncingEtl(false);
+    }
+  };
+
+  const filteredForecast = useMemo(() => {
+    return forecastData.filter((item) => {
+      const matchSearch = String(item.product_name || "").toLowerCase().includes(forecastSearch.toLowerCase());
+      const matchFilter = forecastFilter === "ALL" ? true : item.status === forecastFilter;
+      return matchSearch && matchFilter;
+    });
+  }, [forecastData, forecastSearch, forecastFilter]);
+
+  const forecastSummary = useMemo(() => {
+    let total = forecastData.length;
+    let restock = 0;
+    let slow = 0;
+    let stable = 0;
+    forecastData.forEach((item) => {
+      if (item.status === "RESTOCK") restock++;
+      else if (item.status === "SLOW_MOVING") slow++;
+      else if (item.status === "STABLE") stable++;
+    });
+    return { total, restock, slow, stable };
+  }, [forecastData]);
 
   const handleFilterChange = (field, value) => {
     setFilters((current) => ({
@@ -357,45 +442,76 @@ function ReportsPage() {
     <section className="panel-page reports-page">
       <div className="page-head reports-head">
         <div>
-          <h1>Báo cáo doanh thu</h1>
-          <p>Thống kê hiệu suất kinh doanh qua biểu đồ trực quan và chi tiết số liệu.</p>
+          <h1>{activeTab === "revenue" ? "Báo cáo doanh thu" : "Dự báo AI & Nhập hàng"}</h1>
+          <p>
+            {activeTab === "revenue"
+              ? "Thống kê hiệu suất kinh doanh qua biểu đồ trực quan và chi tiết số liệu."
+              : "Phân tích hàng bán chậm và dự báo nhu cầu nhập kho trong 30 ngày tới từ kho DWH bằng Trí tuệ nhân tạo."}
+          </p>
         </div>
         <div className="reports-actions">
-          <button
-            type="button"
-            className="action-btn-outline"
-            onClick={exportToCSV}
-            disabled={status === "loading" || report.data.length === 0}
-            title="Tải báo cáo dưới dạng file Excel CSV"
-          >
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Xuất CSV</span>
-          </button>
-          <button
-            type="button"
-            className="action-btn-outline"
-            onClick={() => window.print()}
-            disabled={status === "loading" || report.data.length === 0}
-            title="In trang báo cáo này"
-          >
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            <span>In báo cáo</span>
-          </button>
-          <button type="button" className="section-action" onClick={loadReport} disabled={status === "loading"}>
-            Làm mới
-          </button>
+          {activeTab === "revenue" ? (
+            <>
+              <button
+                type="button"
+                className="action-btn-outline"
+                onClick={exportToCSV}
+                disabled={status === "loading" || report.data.length === 0}
+                title="Tải báo cáo dưới dạng file Excel CSV"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Xuất CSV</span>
+              </button>
+              <button
+                type="button"
+                className="action-btn-outline"
+                onClick={() => window.print()}
+                disabled={status === "loading" || report.data.length === 0}
+                title="In trang báo cáo này"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span>In báo cáo</span>
+              </button>
+              <button type="button" className="section-action" onClick={loadReport} disabled={status === "loading"}>
+                Làm mới
+              </button>
+            </>
+          ) : (
+            <button type="button" className="section-action" onClick={loadForecast} disabled={forecastLoading}>
+              Làm mới dự báo
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="report-filter-bar" aria-label="Bộ lọc báo cáo doanh thu">
+      <div className="report-tabs">
+        <button
+          type="button"
+          className={`report-tab-btn ${activeTab === "revenue" ? "active" : ""}`}
+          onClick={() => setActiveTab("revenue")}
+        >
+          Doanh thu & Doanh số
+        </button>
+        <button
+          type="button"
+          className={`report-tab-btn ${activeTab === "forecast" ? "active" : ""}`}
+          onClick={() => setActiveTab("forecast")}
+        >
+          Dự báo AI & Nhập hàng DWH
+        </button>
+      </div>
+
+      {activeTab === "revenue" ? (
+        <>
+          <div className="report-filter-bar" aria-label="Bộ lọc báo cáo doanh thu">
         <div className="report-period-selector-wrap">
           <span className="report-filter-label">Kiểu thống kê</span>
           <div className="report-period-tabs">
@@ -933,6 +1049,149 @@ function ReportsPage() {
           </table>
         </div>
       </section>
+      </>
+      ) : (
+        <div className="forecast-tab-content">
+          <div className="forecast-filter-bar">
+            <div className="forecast-filter-left">
+              <input
+                type="text"
+                className="forecast-search-input"
+                placeholder="Tìm kiếm sản phẩm..."
+                value={forecastSearch}
+                onChange={(e) => setForecastSearch(e.target.value)}
+              />
+              <select
+                className="forecast-select"
+                value={forecastFilter}
+                onChange={(e) => setForecastFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="RESTOCK">Cần nhập hàng gấp (RESTOCK)</option>
+                <option value="SLOW_MOVING">Hàng bán chậm (SLOW_MOVING)</option>
+                <option value="STABLE">Tồn kho ổn định (STABLE)</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              className="forecast-sync-btn"
+              onClick={handleSyncEtl}
+              disabled={syncingEtl}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncingEtl ? "spin 1s linear infinite" : "none" }}>
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>{syncingEtl ? "Đang đồng bộ..." : "Đồng bộ từ Database chính (ETL)"}</span>
+            </button>
+          </div>
+
+          {forecastError && (
+            <div className="error-banner" style={{ background: "rgba(224, 82, 82, 0.15)", border: "1px solid rgba(224, 82, 82, 0.3)", borderRadius: "10px", padding: "12px 16px", color: "#e05252", marginBottom: "20px", fontSize: "14px" }}>
+              Lỗi: {forecastError}
+            </div>
+          )}
+
+          <div className="forecast-grid">
+            <div className="forecast-card">
+              <span className="forecast-card-title">Tổng số mặt hàng</span>
+              <span className="forecast-card-value">{forecastSummary.total}</span>
+            </div>
+            <div className="forecast-card restock">
+              <span className="forecast-card-title" style={{ color: "#ff5b5b" }}>Cần nhập gấp (RESTOCK)</span>
+              <span className="forecast-card-value" style={{ color: "#ff5b5b" }}>{forecastSummary.restock}</span>
+            </div>
+            <div className="forecast-card slow">
+              <span className="forecast-card-title" style={{ color: "#f39c12" }}>Hàng bán chậm (SLOW_MOVING)</span>
+              <span className="forecast-card-value" style={{ color: "#f39c12" }}>{forecastSummary.slow}</span>
+            </div>
+            <div className="forecast-card stable">
+              <span className="forecast-card-title" style={{ color: "#2ecc71" }}>Tồn kho ổn định (STABLE)</span>
+              <span className="forecast-card-value" style={{ color: "#2ecc71" }}>{forecastSummary.stable}</span>
+            </div>
+          </div>
+
+          {forecastLoading ? (
+            <div className="forecast-loading-wrap">
+              <div className="spinner"></div>
+              <span>Đang tính toán lượng bán dự kiến và phân tích dữ liệu AI từ DWH...</span>
+            </div>
+          ) : (
+            <section className="report-table-panel">
+              <div className="section-title table-title-area" style={{ marginBottom: "16px" }}>
+                <h3>Khuyến nghị nhập kho & Cảnh báo tồn đọng</h3>
+                <span className="text-muted">Danh sách sản phẩm được AI đề xuất nhập thêm hoặc khuyến cáo hàng khó bán.</span>
+              </div>
+              <div className="orders-table-wrap">
+                <table className="orders-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "25%" }}>Sản phẩm</th>
+                      <th style={{ width: "15%" }}>Danh mục / Vật liệu</th>
+                      <th style={{ width: "10%" }}>Tồn kho</th>
+                      <th style={{ width: "12%" }}>Dự báo bán (30 ngày)</th>
+                      <th style={{ width: "13%" }}>Đề xuất nhập</th>
+                      <th style={{ width: "25%" }}>Phân tích xu hướng từ AI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredForecast.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: "center", padding: "40px", color: "#a4a9b3" }}>
+                          Không tìm thấy sản phẩm nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredForecast.map((item) => (
+                        <tr key={item.original_product_id}>
+                          <td>
+                            <strong>{item.product_name}</strong>
+                            <div style={{ fontSize: "11px", color: "#a4a9b3", marginTop: "4px" }}>
+                              ID gốc: #{item.original_product_id} | Đơn giá: {formatMoney(item.current_price)}
+                            </div>
+                          </td>
+                          <td>
+                            <div>{item.category_name}</div>
+                            <small className="text-muted" style={{ fontSize: "11px" }}>{item.material_type}</small>
+                          </td>
+                          <td>
+                            <strong style={{ color: item.stock_quantity === 0 ? "#ff5b5b" : "#fff" }}>
+                              {item.stock_quantity}
+                            </strong>
+                          </td>
+                          <td style={{ color: "#d4af37", fontWeight: "700" }}>
+                            {item.forecast_demand_30d} chiếc
+                          </td>
+                          <td>
+                            {item.status === "RESTOCK" ? (
+                              <span style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <span className="status-badge restock">Nhập thêm</span>
+                                <strong style={{ color: "#ff5b5b", fontSize: "13px", paddingLeft: "8px" }}>
+                                  +{item.recommend_import_qty} chiếc
+                                </strong>
+                              </span>
+                            ) : item.status === "SLOW_MOVING" ? (
+                              <span className="status-badge slow">Bán chậm (0)</span>
+                            ) : (
+                              <span className="status-badge stable">Đủ hàng (0)</span>
+                            )}
+                          </td>
+                          <td>
+                            <div className="ai-reason-text">
+                              {item.reason}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </section>
   );
 }

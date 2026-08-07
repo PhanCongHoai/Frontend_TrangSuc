@@ -26,6 +26,7 @@ import GoldRatesPage from "./pages/admin/pages/GoldRatesPage";
 import AdminOrdersPage from "./pages/admin/pages/OrdersPage";
 import AdminProductsPage from "./pages/admin/pages/ProductsPage";
 import ReportsPage from "./pages/admin/pages/ReportsPage";
+import SmartReportPage from "./pages/admin/pages/SmartReportPage";
 import PromotionsPage from "./pages/admin/pages/PromotionsPage";
 import AdminReturnRequestsPage from "./pages/admin/pages/ReturnRequestsPage";
 import ShipperSimulatorPage from "./pages/admin/pages/ShipperSimulatorPage";
@@ -210,6 +211,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="smart-reports" element={<SmartReportPage />} />
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="banners" element={<BannersPage />} />
           <Route path="gold-rates" element={<GoldRatesPage />} />

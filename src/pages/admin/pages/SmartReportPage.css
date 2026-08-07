@@ -1,0 +1,405 @@
+/* SmartReportPage.css - Centered Chat Console with Inline Collapsible Data Inspector */
+
+.smart-report-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px);
+  max-height: 100vh;
+}
+
+.smart-report-workspace-single {
+  display: flex;
+  justify-content: center;
+  flex-grow: 1;
+  height: calc(100vh - 160px);
+  min-height: 480px;
+  margin-top: 15px;
+}
+
+/* FULL WIDTH CHAT CONSOLE */
+.smart-report-chat-container-full {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 960px; /* Centered layout for comfortable reading */
+  background: rgba(30, 30, 40, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.smart-report-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.smart-report-chat-header h3 {
+  font-size: 16px;
+  margin: 0;
+  color: #f4c84b; /* Gold accent */
+  font-weight: 600;
+}
+
+.error-badge {
+  font-size: 11px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.smart-report-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.smart-report-clear-btn {
+  display: flex;
+  align-items: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.smart-report-clear-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.smart-report-clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.smart-report-chat-body {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Chat Bubbles */
+.chat-message-row {
+  display: flex;
+  width: 100%;
+}
+
+.chat-message-row.user {
+  justify-content: flex-end;
+}
+
+.chat-message-row.assistant {
+  justify-content: flex-start;
+}
+
+.chat-message-bubble {
+  max-width: 90%;
+  padding: 12px 18px;
+  border-radius: 12px;
+  line-height: 1.5;
+  font-size: 14px;
+  position: relative;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.chat-message-bubble.user {
+  background: linear-gradient(135deg, #d4af37, #b28e22);
+  color: #121212;
+  border-bottom-right-radius: 2px;
+  font-weight: 500;
+}
+
+.chat-message-bubble.assistant {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+  border-bottom-left-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Expand View bubble modification */
+.chat-message-bubble.assistant.expanded-view {
+  width: 100%;
+  max-width: 90%;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(244, 200, 75, 0.25);
+  box-shadow: 0 0 16px rgba(244, 200, 75, 0.06);
+}
+
+.message-content {
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* INLINE COLLAPSIBLE INSPECTOR */
+.message-sql-addon {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+.inspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(244, 200, 75, 0.08);
+  border: 1px solid rgba(244, 200, 75, 0.2);
+  color: #f4c84b;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.inspect-btn:hover {
+  background: rgba(244, 200, 75, 0.15);
+  border-color: #f4c84b;
+}
+
+.inspect-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.chat-message-bubble.expanded-view .inspect-btn svg {
+  transform: rotate(180deg);
+}
+
+.inline-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.inspector-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a0a0a0;
+  letter-spacing: 0.8px;
+  margin-top: 4px;
+}
+
+.inspector-section-label.flex-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.row-count-badge {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d0d0d0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* SQL Code Block */
+.sql-code-block {
+  margin: 0;
+  background: #111116;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  color: #38bdf8; /* T-SQL blue */
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Inline Table Viewport */
+.table-viewport-inline {
+  background: #111116;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 240px; /* Constrain inline table height */
+}
+
+.table-responsive-wrapper {
+  width: 100%;
+}
+
+.smart-report-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.smart-report-data-table th,
+.smart-report-data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+}
+
+.smart-report-data-table th {
+  background: rgba(255, 255, 255, 0.03);
+  color: #a0a0a0;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+}
+
+.smart-report-data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.smart-report-data-table td {
+  color: #d0d0d0;
+}
+
+/* Chat Footer Form */
+.smart-report-chat-footer {
+  display: flex;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 10px;
+}
+
+.smart-report-chat-footer input {
+  flex-grow: 1;
+  background: rgba(20, 20, 25, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #ffffff;
+  font-size: 13.5px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.smart-report-chat-footer input:focus {
+  border-color: #f4c84b;
+  box-shadow: 0 0 6px rgba(244, 200, 75, 0.25);
+}
+
+.smart-report-chat-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f4c84b, #d4af37);
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  color: #121212;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13.5px;
+}
+
+.smart-report-chat-footer button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 200, 75, 0.2);
+}
+
+.smart-report-chat-footer button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+/* Chat bubble loading animation */
+.chat-message-bubble.loading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 18px;
+}
+
+.chat-message-bubble.loading .dot {
+  width: 6px;
+  height: 6px;
+  background: #a0a0a0;
+  border-radius: 50%;
+  animation: wave 1.2s infinite ease-in-out;
+}
+
+.chat-message-bubble.loading .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat-message-bubble.loading .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes wave {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* Custom alerts */
+.db-error-alert {
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.05);
+  border-left: 3px solid #ef4444;
+  color: #fca5a5;
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.db-error-alert strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #ef4444;
+}
+
+.db-error-alert p {
+  margin: 0;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.no-data-alert {
+  padding: 15px;
+  text-align: center;
+  color: #888888;
+  font-size: 12px;
+}
+
+/* Link Styling for Chat Bubbles */
+.ai-advisor-link {
+  color: #f4c84b;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  margin: 0 2px;
+}
+
+.ai-advisor-link:hover {
+  color: #ffffff;
+}
+

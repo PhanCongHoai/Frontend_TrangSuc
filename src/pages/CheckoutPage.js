@@ -146,6 +146,12 @@ function buildPlacedOrderState(payload) {
   };
 }
 
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 function normalizeRequestError(error, fallbackMessage) {
   const rawMessage = String(error?.message || "").trim();
 
@@ -192,6 +198,7 @@ function CheckoutPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [orderNote, setOrderNote] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [countdownSeconds, setCountdownSeconds] = useState(null);
   const [addressError, setAddressError] = useState("");
   const [shippingError, setShippingError] = useState("");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -855,6 +862,10 @@ function CheckoutPage() {
           return;
         }
 
+        if (payload.data?.payment?.remainingSeconds !== undefined) {
+          setCountdownSeconds(payload.data.payment.remainingSeconds);
+        }
+
         setPlacedOrder((current) => {
           if (!current || Number(current.orderId) !== Number(payload.data?.orderId || 0)) {
             return current;
@@ -906,6 +917,22 @@ function CheckoutPage() {
       window.clearInterval(timerId);
     };
   }, [isPaymentConfirmed, isPrepaidOrder, placedOrder?.orderId]);
+
+  useEffect(() => {
+    if (countdownSeconds === null || countdownSeconds <= 0 || isPaymentConfirmed) {
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setCountdownSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdownSeconds, isPaymentConfirmed]);
 
   const handleChange = ({ target: { name, value } }) => {
     setFormData((current) => {
@@ -1226,15 +1253,31 @@ function CheckoutPage() {
                 {placedOrder.payment.sepayTransactionId ? (
                   <p>Mã giao dịch SePay: {placedOrder.payment.sepayTransactionId}</p>
                 ) : null}
-                {placedOrder.payment.warning ? (
+                 {placedOrder.payment.warning ? (
                   <div className="checkout-address-preview">
                     <strong>Luu y cau hinh thanh toan</strong>
                     <p>{placedOrder.payment.warning}</p>
                   </div>
                 ) : null}
+
+                {!isPaymentConfirmed && countdownSeconds !== null && (
+                  <div className="checkout-payment-timer" style={{ background: "rgba(212, 175, 55, 0.1)", border: "1px solid rgba(212, 175, 55, 0.3)", borderRadius: "12px", padding: "12px 16px", textAlign: "center", marginBottom: "20px" }}>
+                    {countdownSeconds > 0 ? (
+                      <span style={{ fontSize: "14px", color: "#d4af37", fontWeight: "700" }}>
+                        Thời gian còn lại để chuyển khoản: {formatTime(countdownSeconds)}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "14px", color: "#e05252", fontWeight: "700" }}>
+                        Đơn hàng đã bị hủy tự động do hết hạn thanh toán (3 phút).
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {!isPaymentConfirmed &&
                 placedOrder.payment.qrEnabled &&
-                placedOrder.payment.qrCodeUrl ? (
+                placedOrder.payment.qrCodeUrl &&
+                (countdownSeconds === null || countdownSeconds > 0) ? (
                   <div className="checkout-payment-qr">
                     <img
                       src={placedOrder.payment.qrCodeUrl}
@@ -1243,7 +1286,8 @@ function CheckoutPage() {
                     />
                   </div>
                 ) : null}
-                {!isPaymentConfirmed && !placedOrder.payment.qrEnabled ? (
+
+                {!isPaymentConfirmed && !placedOrder.payment.qrEnabled && (countdownSeconds === null || countdownSeconds > 0) ? (
                   <div className="checkout-address-preview">
                     <strong>Chưa tạo được QR SePay</strong>
                     <p>
@@ -1253,51 +1297,53 @@ function CheckoutPage() {
                   </div>
                 ) : null}
 
-                <div className="checkout-payment-details">
-                  <div className="checkout-payment-row">
-                    <span>Ngân hàng</span>
-                    <strong>
-                      {placedOrder.payment.bankName ||
-                        placedOrder.payment.bankCode ||
-                        "Chưa có"}
-                    </strong>
-                  </div>
-                  <div className="checkout-payment-row">
-                    <span>{placedOrder.payment.isVirtualAccount ? "So tai khoan ao" : "So tai khoan"}</span>
-                    <strong>{placedOrder.payment.accountNumber || "Chưa có"}</strong>
-                  </div>
-                  {placedOrder.payment.accountHolderName ? (
+                {countdownSeconds === 0 ? null : (
+                  <div className="checkout-payment-details">
                     <div className="checkout-payment-row">
-                      <span>Chu tai khoan</span>
-                      <strong>{placedOrder.payment.accountHolderName}</strong>
+                      <span>Ngân hàng</span>
+                      <strong>
+                        {placedOrder.payment.bankName ||
+                          placedOrder.payment.bankCode ||
+                          "Chưa có"}
+                      </strong>
                     </div>
-                  ) : null}
-                  <div className="checkout-payment-row">
-                    <span>Số tiền</span>
-                    <strong>{formatCurrency(placedOrder.payment.amount || 0)}</strong>
-                  </div>
-                  <div className="checkout-payment-row">
-                    <span>Nội dung chuyển khoản</span>
-                    <strong>
-                      {placedOrder.payment.transferContent ||
-                        placedOrder.payment.paymentReference ||
-                        "Chưa có"}
-                    </strong>
-                  </div>
-                  {placedOrder.payment.expiresAt ? (
                     <div className="checkout-payment-row">
-                      <span>Hieu luc den</span>
-                      <strong>{placedOrder.payment.expiresAt}</strong>
+                      <span>{placedOrder.payment.isVirtualAccount ? "So tai khoan ao" : "So tai khoan"}</span>
+                      <strong>{placedOrder.payment.accountNumber || "Chưa có"}</strong>
                     </div>
-                  ) : null}
-                  {!isPaymentConfirmed ? (
-                    <p className="checkout-payment-help">
-                      {placedOrder.payment.isVirtualAccount
-                        ? "He thong uu tien doi soat theo tai khoan ao cua don hang nay. Ban van nen giu nguyen noi dung chuyen khoan de de tra soat."
-                        : "Khach hang can chuyen dung so tien va giu nguyen noi dung de SePay tu dong doi soat don hang."}
-                    </p>
-                  ) : null}
-                </div>
+                    {placedOrder.payment.accountHolderName ? (
+                      <div className="checkout-payment-row">
+                        <span>Chu tai khoan</span>
+                        <strong>{placedOrder.payment.accountHolderName}</strong>
+                      </div>
+                    ) : null}
+                    <div className="checkout-payment-row">
+                      <span>Số tiền</span>
+                      <strong>{formatCurrency(placedOrder.payment.amount || 0)}</strong>
+                    </div>
+                    <div className="checkout-payment-row">
+                      <span>Nội dung chuyển khoản</span>
+                      <strong>
+                        {placedOrder.payment.transferContent ||
+                          placedOrder.payment.paymentReference ||
+                          "Chưa có"}
+                      </strong>
+                    </div>
+                    {placedOrder.payment.expiresAt ? (
+                      <div className="checkout-payment-row">
+                        <span>Hieu luc den</span>
+                        <strong>{placedOrder.payment.expiresAt}</strong>
+                      </div>
+                    ) : null}
+                    {!isPaymentConfirmed ? (
+                      <p className="checkout-payment-help">
+                        {placedOrder.payment.isVirtualAccount
+                          ? "He thong uu tien doi soat theo tai khoan ao cua don hang nay. Ban van nen giu nguyen noi dung chuyen khoan de de tra soat."
+                          : "Khach hang can chuyen dung so tien va giu nguyen noi dung de SePay tu dong doi soat don hang."}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
               </div>
             ) : null}
             {!isPrepaidOrder ? (

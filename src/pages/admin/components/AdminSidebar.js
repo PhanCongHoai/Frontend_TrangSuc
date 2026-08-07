@@ -80,6 +80,9 @@ function AdminSidebar() {
         <NavLink to="/admin/reports" className="admin-nav-link">
           Báo cáo doanh thu
         </NavLink>
+        <NavLink to="/admin/smart-reports" className="admin-nav-link">
+          Báo cáo thông minh
+        </NavLink>
         <NavLink to="/admin/products" className="admin-nav-link">
           Sản phẩm
         </NavLink>
