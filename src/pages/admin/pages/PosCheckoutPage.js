@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { getAuthHeaders, getCurrentUser, clearAuthSession } from "../../../utils/auth";
+import { getAuthHeaders, getCurrentUser, clearAuthSession, isAdminUser, isStaffUser } from "../../../utils/auth";
 import { buildApiUrl, buildAssetUrl } from "../../../utils/api";
 import { formatCurrency, computeSalePrice } from "../../../utils/pricing";
 import "./PosCheckoutPage.css";
@@ -9,6 +9,12 @@ const PRODUCTS_API = buildApiUrl("/api/products");
 
 function PosCheckoutPage() {
   const currentUser = getCurrentUser();
+
+  useEffect(() => {
+    if (!currentUser || (!isAdminUser(currentUser) && !isStaffUser(currentUser))) {
+      window.location.href = "/login";
+    }
+  }, [currentUser]);
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);

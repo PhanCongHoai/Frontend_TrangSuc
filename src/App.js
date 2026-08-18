@@ -39,6 +39,7 @@ import {
   clearAuthSession,
   getAccessToken,
   getCurrentUser,
+  isStaffUser,
 } from "./utils/auth";
 import { buildApiUrl } from "./utils/api";
 
@@ -192,10 +193,31 @@ function AccountStatusGuard() {
   return null;
 }
 
+function StaffAccessGuard() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (isStaffUser(currentUser)) {
+      const allowedPaths = ["/pos", "/login", "/forgot-password", "/reset-password"];
+      const isAllowed = allowedPaths.some(
+        (p) => location.pathname === p || location.pathname.startsWith(`${p}/`)
+      );
+      if (!isAllowed) {
+        navigate("/pos", { replace: true });
+      }
+    }
+  }, [location.pathname, navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <>
       <AccountStatusGuard />
+      <StaffAccessGuard />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductsPage />} />

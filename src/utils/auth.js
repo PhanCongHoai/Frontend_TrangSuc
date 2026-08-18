@@ -76,6 +76,11 @@ export function isAdminUser(user) {
   return roleName === "admin";
 }
 
+export function isStaffUser(user) {
+  const roleName = String(user?.roleName || user?.role || "").toLowerCase();
+  return roleName === "staff";
+}
+
 export function clearAuthSession() {
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
   sessionStorage.removeItem(CURRENT_USER_KEY);
