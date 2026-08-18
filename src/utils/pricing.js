@@ -92,11 +92,26 @@ export function resolveTierPrice(
 ) {
   const normalizedQuantity = Math.max(1, Math.floor(Number(quantity || 1)));
   const tiers = applyPricingContextToTiers(priceTiers, pricingContext);
-  const matchedTier = tiers.find(
+
+  if (!tiers || tiers.length === 0) {
+    return Number(fallbackPrice || 0);
+  }
+
+  // 1. Tìm bậc giá khớp chính xác trong khoảng [minQuantity, maxQuantity]
+  let matchedTier = tiers.find(
     (tier) =>
       normalizedQuantity >= tier.minQuantity &&
       (tier.maxQuantity === null || normalizedQuantity <= tier.maxQuantity)
   );
+
+  // 2. Nếu số lượng mua vượt quá ngưỡng tối đa của tất cả các bậc (vd: 150 > 100),
+  // tự động áp dụng bậc giá cao nhất (bậc có minQuantity lớn nhất / chiết khấu tốt nhất)
+  if (!matchedTier && tiers.length > 0) {
+    const highestTier = tiers[tiers.length - 1];
+    if (normalizedQuantity >= highestTier.minQuantity) {
+      matchedTier = highestTier;
+    }
+  }
 
   return Number(matchedTier?.price ?? fallbackPrice ?? 0);
 }

@@ -1,4 +1,3 @@
-const LOCAL_API_BASE_URL = "http://localhost:5000";
 const PRODUCTION_TUNNEL_API_BASE_URL =
   "https://apartment-surveys-wiki-thomas.trycloudflare.com";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
@@ -13,19 +12,25 @@ function normalizeApiBaseUrl(value) {
 }
 
 function isLocalApiBaseUrl(value) {
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?$/i.test(value);
+  return /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(?::\d+)?$/i.test(value);
 }
 
 function isRunningOnLocalhost() {
   if (typeof window === "undefined") {
     return false;
   }
-
-  return LOCAL_HOSTNAMES.has(window.location.hostname);
+  const hostname = window.location.hostname;
+  return (
+    LOCAL_HOSTNAMES.has(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+  );
 }
 
 const normalizedApiBaseUrl = normalizeApiBaseUrl(rawApiBaseUrl);
 const shouldUseLocalApiBaseUrl = isRunningOnLocalhost();
+const LOCAL_API_BASE_URL = typeof window !== "undefined" ? `http://${window.location.hostname}:5000` : "http://localhost:5000";
 
 export const API_BASE_URL =
   normalizedApiBaseUrl &&

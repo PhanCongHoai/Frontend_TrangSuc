@@ -30,6 +30,9 @@ import SmartReportPage from "./pages/admin/pages/SmartReportPage";
 import PromotionsPage from "./pages/admin/pages/PromotionsPage";
 import AdminReturnRequestsPage from "./pages/admin/pages/ReturnRequestsPage";
 import ShipperSimulatorPage from "./pages/admin/pages/ShipperSimulatorPage";
+import RawMaterialsPage from "./pages/admin/pages/RawMaterialsPage";
+import ManufacturingPage from "./pages/admin/pages/ManufacturingPage";
+import PosCheckoutPage from "./pages/admin/pages/PosCheckoutPage";
 import {
   BLOCKED_ACCOUNT_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
@@ -221,7 +224,10 @@ function App() {
           <Route path="promotions" element={<PromotionsPage />} />
           <Route path="return-requests" element={<AdminReturnRequestsPage />} />
           <Route path="shipper-simulator" element={<ShipperSimulatorPage />} />
+          <Route path="raw-materials" element={<RawMaterialsPage />} />
+          <Route path="manufacturing" element={<ManufacturingPage />} />
         </Route>
+        <Route path="/pos" element={<PosCheckoutPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />

@@ -1,0 +1,596 @@
+/* POS Terminal Interface Stylesheet */
+
+.pos-terminal-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  overflow: hidden;
+}
+
+.pos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #2c2c2c 0%, #1e1e1e 100%);
+  border-bottom: 2px solid #333333;
+}
+
+.pos-header-left h2 {
+  margin: 0 0 5px 0;
+  font-size: 22px;
+  color: #e2b85c;
+}
+
+.pos-cashier-label {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.pos-header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.pos-btn-reset {
+  padding: 8px 16px;
+  background-color: #2ebd7f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.pos-btn-reset:hover {
+  background-color: #259e6a;
+}
+
+.pos-btn-logout {
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.pos-btn-logout:hover {
+  background-color: rgba(255, 107, 107, 0.1);
+}
+
+.pos-screen-notice {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  font-size: 18px;
+  color: #aaa;
+}
+
+.pos-screen-notice.error {
+  color: #ff6b6b;
+}
+
+.pos-main-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  flex: 1;
+  overflow: hidden;
+  padding: 20px;
+  gap: 20px;
+}
+
+/* Left Section: Basket and search */
+.pos-left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pos-search-wrapper {
+  position: relative;
+}
+
+.pos-search-input {
+  width: 100%;
+  padding: 15px 20px;
+  background-color: #262626;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.pos-search-input:focus {
+  border-color: #e2b85c;
+}
+
+.pos-search-results {
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background-color: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 8px;
+  z-index: 100;
+  max-height: 300px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.pos-search-results li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #3c3c3c;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pos-search-results li:hover {
+  background-color: #383838;
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-info strong {
+  font-size: 15px;
+  color: #fff;
+}
+
+.result-info span {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.result-stock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.result-stock span {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.pos-basket-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background-color: #262626;
+  border-radius: 10px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.pos-basket-card h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #e2b85c;
+  border-bottom: 1px solid #3c3c3c;
+  padding-bottom: 10px;
+}
+
+.pos-empty-basket {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  color: #aaa;
+  font-style: italic;
+}
+
+.pos-basket-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pos-basket-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pos-basket-table th {
+  text-align: left;
+  padding: 10px;
+  color: #aaa;
+  font-size: 13px;
+  border-bottom: 2px solid #3c3c3c;
+}
+
+.pos-basket-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 14px;
+}
+
+.pos-qty-actions {
+  display: inline-flex;
+  align-items: center;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.pos-qty-actions button {
+  width: 25px;
+  height: 25px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.pos-qty-actions span {
+  width: 30px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.pos-remove-item {
+  color: #ff6b6b;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Right Section: CRM & Payment */
+.pos-right-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.pos-checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pos-card {
+  background-color: #262626;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #333;
+}
+
+.pos-card h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #e2b85c;
+  border-bottom: 1px solid #3c3c3c;
+  padding-bottom: 10px;
+}
+
+.pos-form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.pos-form-group label {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.pos-form-group input {
+  padding: 10px;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  outline: none;
+}
+
+.pos-form-group input:focus {
+  border-color: #e2b85c;
+}
+
+.pos-payment-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.pos-payment-selector label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pos-payment-selector label.active {
+  border-color: #e2b85c;
+  background-color: rgba(226, 184, 92, 0.1);
+}
+
+.pos-total-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1a1a1a;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.pos-total-summary span {
+  font-size: 15px;
+  color: #aaa;
+}
+
+.pos-total-summary strong {
+  font-size: 24px;
+  color: #2ebd7f;
+}
+
+.pos-checkout-message {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.pos-checkout-message.success {
+  background-color: rgba(46, 189, 127, 0.15);
+  border: 1px solid #2ebd7f;
+  color: #2ebd7f;
+}
+
+.pos-checkout-message.error {
+  background-color: rgba(255, 107, 107, 0.15);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+}
+
+.pos-qr-pending-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px dashed #e2b85c;
+}
+
+.pos-qr-img {
+  width: 180px;
+  height: 180px;
+  margin: 15px 0;
+  border-radius: 8px;
+  border: 4px solid #fff;
+}
+
+.pos-qr-details {
+  font-size: 14px;
+  text-align: center;
+  color: #ddd;
+}
+
+.pos-btn-submit {
+  width: 100%;
+  padding: 15px;
+  background-color: #e2b85c;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pos-btn-submit:hover {
+  background-color: #cda248;
+}
+
+.pos-btn-submit:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Simulated K80 Receipt Modal Overlay */
+.pos-invoice-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.pos-invoice-modal {
+  background-color: #2c2c2c;
+  padding: 25px;
+  border-radius: 10px;
+  border: 1px solid #555;
+  width: 350px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.pos-invoice-modal h3 {
+  margin: 0 0 15px 0;
+  color: #2ebd7f;
+  text-align: center;
+}
+
+.pos-invoice-modal-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.pos-btn-print {
+  flex: 1;
+  padding: 10px;
+  background-color: #e2b85c;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pos-btn-done {
+  flex: 1;
+  padding: 10px;
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Thermal receipt K80 layout styles */
+.pos-invoice-k80-receipt {
+  background-color: #ffffff;
+  color: #000000;
+  padding: 15px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+}
+
+.receipt-header {
+  text-align: center;
+}
+
+.receipt-header h2 {
+  font-size: 16px;
+  margin: 0 0 5px 0;
+}
+
+.receipt-header p {
+  margin: 2px 0;
+  font-size: 11px;
+}
+
+.receipt-header h3 {
+  font-size: 14px;
+  margin: 10px 0 5px 0;
+}
+
+.receipt-dashed {
+  border: none;
+  border-top: 1px dashed #000;
+  margin: 10px 0;
+}
+
+.receipt-code {
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.receipt-body .receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.receipt-items-table th {
+  border-bottom: 1px dashed #000;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.receipt-items-table td {
+  padding: 6px 0;
+  font-size: 11px;
+}
+
+.receipt-row.total {
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.receipt-footer {
+  text-align: center;
+  font-size: 10px;
+}
+
+.receipt-footer p {
+  margin: 3px 0;
+}
+
+/* PRINT MEDIA Directives to isolate K80 receipt during browser print */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .pos-invoice-modal-overlay,
+  .pos-invoice-modal-overlay * {
+    visibility: hidden;
+  }
+
+  #invoice-print-area,
+  #invoice-print-area * {
+    visibility: visible;
+  }
+
+  #invoice-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    background-color: #fff;
+    color: #000;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  /* Removes browser default headers/footers */
+  @page {
+    margin: 0;
+  }
+}

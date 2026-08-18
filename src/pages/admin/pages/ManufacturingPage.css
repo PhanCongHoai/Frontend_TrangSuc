@@ -1,0 +1,265 @@
+/* Manufacturing Page Premium Stylesheet */
+
+.mfg-container {
+  padding: 10px;
+  animation: mfg-fadeIn 0.4s ease-out;
+}
+
+@keyframes mfg-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphic Cards */
+.mfg-card {
+  background: rgba(30, 30, 30, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+  padding: 24px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.mfg-card:hover {
+  border-color: rgba(226, 184, 92, 0.25) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(226, 184, 92, 0.05) !important;
+}
+
+/* Tab Bar styling */
+.mfg-tabs-container {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  border-radius: 30px;
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mfg-tab-btn {
+  padding: 10px 24px !important;
+  border-radius: 24px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  border: none !important;
+  transition: all 0.25s ease !important;
+  background: transparent !important;
+  color: #aaa !important;
+}
+
+.mfg-tab-btn:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.mfg-tab-btn.active {
+  background: linear-gradient(135deg, #e2b85c 0%, #b88a30 100%) !important;
+  color: #000 !important;
+  box-shadow: 0 4px 15px rgba(226, 184, 92, 0.3) !important;
+}
+
+/* Inputs & Form styling */
+.mfg-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.mfg-input, .mfg-select, .mfg-textarea {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  width: 100%;
+}
+
+.mfg-input:focus, .mfg-select:focus, .mfg-textarea:focus {
+  border-color: #e2b85c !important;
+  box-shadow: 0 0 0 3px rgba(226, 184, 92, 0.15) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Gold Accent Button */
+.mfg-btn-gold {
+  background: linear-gradient(135deg, #e2b85c 0%, #c4993a 100%) !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  padding: 12px 24px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 12px rgba(226, 184, 92, 0.2) !important;
+}
+
+.mfg-btn-gold:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(226, 184, 92, 0.35) !important;
+}
+
+.mfg-btn-gold:active:not(:disabled) {
+  transform: translateY(0) !important;
+}
+
+/* Green Success Button */
+.mfg-btn-green {
+  background: linear-gradient(135deg, #2ebd7f 0%, #228b5e 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  padding: 12px 24px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 12px rgba(46, 189, 127, 0.2) !important;
+}
+
+.mfg-btn-green:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(46, 189, 127, 0.35) !important;
+}
+
+/* Tables styling */
+.mfg-table-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mfg-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(20, 20, 20, 0.4);
+}
+
+.mfg-table th {
+  background: rgba(0, 0, 0, 0.4) !important;
+  color: #e2b85c !important;
+  font-weight: 600 !important;
+  padding: 14px 16px !important;
+  text-align: left;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mfg-table td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ddd;
+  font-size: 14px;
+}
+
+.mfg-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.mfg-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Badges */
+.mfg-status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mfg-status-badge.completed {
+  background: rgba(46, 189, 127, 0.15) !important;
+  color: #2ebd7f !important;
+  border: 1px solid rgba(46, 189, 127, 0.3) !important;
+}
+
+.mfg-status-badge.progress {
+  background: rgba(226, 184, 92, 0.15) !important;
+  color: #e2b85c !important;
+  border: 1px solid rgba(226, 184, 92, 0.3) !important;
+}
+
+.mfg-status-badge.active {
+  background: rgba(46, 189, 127, 0.15) !important;
+  color: #2ebd7f !important;
+  border: 1px solid rgba(46, 189, 127, 0.3) !important;
+}
+
+.mfg-status-badge.inactive {
+  background: rgba(255, 107, 107, 0.15) !important;
+  color: #ff6b6b !important;
+  border: 1px solid rgba(255, 107, 107, 0.3) !important;
+}
+
+/* Lot Detail Container */
+.mfg-lot-container {
+  background: rgba(0, 0, 0, 0.25) !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  position: relative;
+}
+
+/* Work Order Article Card */
+.mfg-wo-article {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  margin-bottom: 16px !important;
+  transition: all 0.25s ease !important;
+}
+
+.mfg-wo-article:hover {
+  border-color: rgba(226, 184, 92, 0.2) !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Modal layout styling */
+.mfg-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: mfg-fadeInModal 0.2s ease-out;
+}
+
+@keyframes mfg-fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mfg-modal-content {
+  background: #1e1e1e !important;
+  width: 550px !important;
+  padding: 28px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5) !important;
+}

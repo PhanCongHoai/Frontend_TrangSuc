@@ -92,6 +92,12 @@ function AdminSidebar() {
         <NavLink to="/admin/gold-rates" className="admin-nav-link">
           Giá vàng và bạc
         </NavLink>
+        <NavLink to="/admin/raw-materials" className="admin-nav-link">
+          Kho phôi nguyên liệu
+        </NavLink>
+        <NavLink to="/admin/manufacturing" className="admin-nav-link">
+          Xưởng & Hao hụt
+        </NavLink>
         <NavLink to="/admin/categories" className="admin-nav-link">
           Danh mục
         </NavLink>

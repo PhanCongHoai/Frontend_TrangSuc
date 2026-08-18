@@ -60,8 +60,15 @@ function Login() {
     (data) => {
       clearAuthSession();
 
-      if (redirectTarget?.startsWith("/admin") && !isAdminUser(data.user)) {
+      const roleName = String(data.user?.roleName || data.user?.role || "").toLowerCase();
+
+      if (redirectTarget?.startsWith("/admin") && roleName !== "admin") {
         setLoginError("Tài khoản này không có quyền truy cập trang admin.");
+        return;
+      }
+
+      if (redirectTarget?.startsWith("/pos") && roleName !== "admin" && roleName !== "staff") {
+        setLoginError("Tài khoản này không có quyền truy cập quầy POS.");
         return;
       }
 
@@ -74,7 +81,7 @@ function Login() {
 
       notifyAuthSessionChanged();
 
-      const nextPath = redirectTarget || (isAdminUser(data.user) ? "/admin/dashboard" : "/");
+      const nextPath = redirectTarget || (roleName === "admin" ? "/admin/dashboard" : (roleName === "staff" ? "/pos" : "/"));
       navigate(nextPath, { replace: true });
     },
     [navigate, redirectTarget]
