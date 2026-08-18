@@ -5,7 +5,6 @@ import {
   BLOCKED_ACCOUNT_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
   clearAuthSession,
-  isAdminUser,
   notifyAuthSessionChanged,
 } from "../utils/auth";
 import { buildApiUrl } from "../utils/api";

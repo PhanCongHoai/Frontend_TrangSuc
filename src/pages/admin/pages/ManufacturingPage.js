@@ -26,7 +26,6 @@ function ManufacturingPage() {
 
   // Work Order Form States
   const [selectedJewelerId, setSelectedJewelerId] = useState("");
-  const [expectedProductId, setExpectedProductId] = useState("");
   const [expectedProductName, setExpectedProductName] = useState(""); // manual expected product model name
   const [quantityExpected, setQuantityExpected] = useState("1");
   const [dueDate, setDueDate] = useState("");
@@ -475,7 +474,6 @@ function ManufacturingPage() {
         setWoSubmitState("success");
         setWoSubmitMessage(`Lập lệnh sản xuất thành công! Mã lệnh: ${data.workOrderCode}`);
         setSelectedJewelerId("");
-        setExpectedProductId("");
         setExpectedProductName("");
         setQuantityExpected("1");
         setDueDate("");

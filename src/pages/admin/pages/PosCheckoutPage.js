@@ -378,7 +378,7 @@ function PosCheckoutPage() {
     }
   };
 
-  const handleCancelOrder = async (isTimeout = false) => {
+  const handleCancelOrder = useCallback(async (isTimeout = false) => {
     if (!pendingOrderData) return;
     
     // Stop polling
@@ -408,7 +408,7 @@ function PosCheckoutPage() {
       setCheckoutState("error");
       setCheckoutMessage(err.message || "Không thể hủy đơn hàng lúc này.");
     }
-  };
+  }, [pendingOrderData]);
 
   const handleSwitchToCash = async () => {
     if (!pendingOrderData) return;
@@ -508,7 +508,7 @@ function PosCheckoutPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [checkoutState, pendingOrderData]);
+  }, [checkoutState, handleCancelOrder]);
 
   const handlePrintInvoice = () => {
     window.print();
